@@ -5,11 +5,21 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Suspense } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-export default function ProtectedLayout({
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+
+export default async function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirect("/auth/login");
+  }
+
   return (
     <TooltipProvider>
       <SidebarProvider>

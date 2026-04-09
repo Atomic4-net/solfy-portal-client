@@ -3,20 +3,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 console.log("Edge Function 'send-email-hook' started")
 
 serve(async (req) => {
-  // 1. Get Environment Variables INSIDE the handler to ensure they are fresh
+  // 1. Get Environment Variables
   const AZURE_AD_TENANT_ID = Deno.env.get('AZURE_AD_TENANT_ID')
   const AZURE_AD_CLIENT_ID = Deno.env.get('AZURE_AD_CLIENT_ID')
   const AZURE_AD_CLIENT_SECRET = Deno.env.get('AZURE_AD_CLIENT_SECRET')
   const AZURE_AD_SENDER_EMAIL = Deno.env.get('AZURE_AD_SENDER_EMAIL')
   const SEND_EMAIL_HOOK_SECRET = Deno.env.get('SEND_EMAIL_HOOK_SECRET')
+  const SITE_URL = Deno.env.get('SITE_URL') // Primary domain for replacement
 
-  // Verify it's a POST request
   if (req.method !== 'POST') {
     return new Response('Method Not Allowed', { status: 405 })
   }
-
-  // Debug check (lengths only for security)
-  console.log(`DEBUG: Config Check -> Tenant: ${AZURE_AD_TENANT_ID?.length || 0}, Client: ${AZURE_AD_CLIENT_ID?.length || 0}, Secret: ${AZURE_AD_CLIENT_SECRET?.length || 0}, Sender: ${AZURE_AD_SENDER_EMAIL || "NONE"}`)
 
   // 2. IMPORTANT: Verify environment variables exist
   if (!AZURE_AD_TENANT_ID || !AZURE_AD_CLIENT_ID || !AZURE_AD_CLIENT_SECRET || !AZURE_AD_SENDER_EMAIL) {
@@ -35,48 +32,55 @@ serve(async (req) => {
     const payload = await req.json()
     console.log("DEBUG: FULL PAYLOAD ->", JSON.stringify(payload, null, 2))
 
-    // Supabase payload normalization
     const user = payload.user
     const email_data = payload.email_data || {}
     const email_action_type = payload.email_action_type || email_data.email_action_type || 'magiclink'
-    
     const recipientEmail = user.email
-    const token = email_data.token || email_data.token_hash
-    const redirectTo = email_data.redirect_to
+    const hash = email_data.token_hash
+    
+    // FORCED URL REPAIR LOGIC
+    // We want to ensure it ends at /auth/confirm even if Supabase tries to send us to the home
+    let redirectTo = email_data.redirect_to || ""
+    const cleanSiteUrl = (SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+
+    // Case 1: If it points to localhost, swap it
+    if (redirectTo.includes("localhost:3000")) {
+      redirectTo = redirectTo.replace(/https?:\/\/localhost:3000/, cleanSiteUrl)
+    }
+
+    // Case 2: If it points to the root of the site without /auth/confirm, we force it
+    // Example: https://dominio.com/?token... -> https://dominio.com/auth/confirm/?token...
+    const urlObj = new URL(redirectTo)
+    if (urlObj.pathname === "/" || urlObj.pathname === "") {
+        console.log("DEBUG: Forcing /auth/confirm path because it was missing in redirect_to")
+        urlObj.pathname = "/auth/confirm"
+        redirectTo = urlObj.toString().replace(/\/$/, "") // Remove trailing slash for consistency
+    }
+    
+    const separator = redirectTo.includes('?') ? '&' : '?'
+    const link = `${redirectTo}${separator}token_hash=${hash}&type=${email_action_type === 'magiclink' ? 'magiclink' : email_action_type}`
+
+    console.log(`DEBUG: Final fixed link -> ${link}`)
 
     // 4. Prepare Email Content
-    let subject = "Inicia sesión en Solfy"
-    let htmlContent = ""
+    let subject = "Tu enlace de acceso a Solfy"
+    if (email_action_type === 'recovery') subject = "Restablece tu contraseña en Solfy"
 
-    if (email_action_type === 'magiclink' || email_action_type === 'signup' || email_action_type === 'recovery') {
-      subject = email_action_type === 'recovery' ? "Restablece tu contraseña en Solfy" : "Tu enlace de acceso a Solfy"
-      
-      // Use token_hash for the confirmation link
-      const hash = email_data.token_hash
-      const separator = redirectTo.includes('?') ? '&' : '?'
-      const link = `${redirectTo}${separator}token_hash=${hash}&type=${email_action_type === 'magiclink' ? 'magiclink' : email_action_type}`
-      
-      htmlContent = `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #fff;">
-          <h2 style="color: #000; font-weight: 900; font-size: 24px; margin-bottom: 24px;">Solfy</h2>
-          <p style="font-size: 16px; color: #333; line-height: 1.5;">Hola,</p>
-          <p style="font-size: 16px; color: #333; line-height: 1.5;">Haz clic en el botón de abajo para acceder de forma segura a tu cuenta.</p>
-          <div style="margin: 32px 0;">
-            <a href="${link}" style="background-color: #000; color: #fff; padding: 14px 28px; border-radius: 99px; text-decoration: none; font-weight: bold; display: inline-block;">Iniciar sesión ahora</a>
-          </div>
-          <p style="color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
-            Este es un enlace de un solo uso. Si no has solicitado este correo, puedes ignorarlo con seguridad.
-          </p>
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #fff;">
+        <h2 style="color: #000; font-weight: 900; font-size: 24px; margin-bottom: 24px;">Solfy</h2>
+        <p style="font-size: 16px; color: #333; line-height: 1.5;">Hola,</p>
+        <p style="font-size: 16px; color: #333; line-height: 1.5;">Haz clic en el botón de abajo para acceder de forma segura a tu cuenta.</p>
+        <div style="margin: 32px 0;">
+          <a href="${link}" style="background-color: #000; color: #fff; padding: 14px 28px; border-radius: 99px; text-decoration: none; font-weight: bold; display: inline-block;">Iniciar sesión ahora</a>
         </div>
-      `
-    }
- else {
-       subject = `Notificación de Solfy: ${email_action_type}`
-       htmlContent = `<p>Acción requerida: ${email_action_type}. Token: ${token}</p>`
-    }
+        <p style="color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+          Este es un enlace de un solo uso. Si no has solicitado este correo, puedes ignorarlo con seguridad.
+        </p>
+      </div>
+    `
 
     // 5. Get Microsoft Graph Access Token
-    console.log("DEBUG: Fetching Microsoft Graph Access Token...")
     const tokenResponse = await fetch(`https://login.microsoftonline.com/${AZURE_AD_TENANT_ID}/oauth2/v2.0/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -89,14 +93,11 @@ serve(async (req) => {
     })
 
     const tokenData = await tokenResponse.json()
-    if (!tokenResponse.ok) {
-      throw new Error(`MS Graph Token Error: ${JSON.stringify(tokenData)}`)
-    }
+    if (!tokenResponse.ok) throw new Error(`MS Graph Token Error: ${JSON.stringify(tokenData)}`)
 
     const accessToken = tokenData.access_token
 
-    // 6. Send Email via Microsoft Graph
-    console.log(`DEBUG: Sending email to ${recipientEmail} via Microsoft Graph...`)
+    // 6. Send Email
     const sendMailResponse = await fetch(`https://graph.microsoft.com/v1.0/users/${AZURE_AD_SENDER_EMAIL}/sendMail`, {
       method: 'POST',
       headers: {
@@ -106,17 +107,8 @@ serve(async (req) => {
       body: JSON.stringify({
         message: {
           subject: subject,
-          body: {
-            contentType: 'HTML',
-            content: htmlContent,
-          },
-          toRecipients: [
-            {
-              emailAddress: {
-                address: recipientEmail,
-              },
-            },
-          ],
+          body: { contentType: 'HTML', content: htmlContent },
+          toRecipients: [{ emailAddress: { address: recipientEmail } }],
         },
         saveToSentItems: 'true',
       }),
@@ -127,7 +119,6 @@ serve(async (req) => {
       throw new Error(`MS Graph SendMail Error: ${errorText}`)
     }
 
-    console.log("DEBUG: Email sent successfully!")
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
       status: 200,
