@@ -1,4 +1,5 @@
 import { NewTicketForm } from "@/components/new-ticket-form";
+import { Suspense } from "react";
 
 export default function NewTicketPage() {
   return (
@@ -10,7 +11,9 @@ export default function NewTicketPage() {
         </p>
       </div>
 
-      <NewTicketForm />
+      <Suspense fallback={<div className="h-64 flex items-center justify-center font-bold uppercase text-[10px] tracking-widest opacity-30 animate-pulse">Cargando formulario...</div>}>
+         <NewTicketForm />
+      </Suspense>
     </div>
   );
 }
