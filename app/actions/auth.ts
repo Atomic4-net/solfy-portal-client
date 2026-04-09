@@ -39,12 +39,16 @@ export async function signUpAction(formData: FormData) {
     }
 
     // 3. Send Magic Link
-    console.log(`DEBUG: All checks passed. Triggering Supabase signInWithOtp for ${email}`);
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const redirectTo = `${siteUrl.replace(/\/$/, "")}/auth/confirm?next=/protected/tickets`;
+    
+    console.log(`DEBUG: Triggering Supabase signInWithOtp for ${email}. Redirecting to: ${redirectTo}`);
+    
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/confirm?next=/protected/set-password`,
+        emailRedirectTo: redirectTo,
         data: {
           hubspot_contact_id: contact.id,
           full_name: `${contact.properties.firstname || ''} ${contact.properties.lastname || ''}`.trim()
