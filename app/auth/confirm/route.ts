@@ -9,11 +9,8 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/protected/set-password";
 
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = next;
-  redirectTo.searchParams.delete("token_hash");
-  redirectTo.searchParams.delete("type");
-  redirectTo.searchParams.delete("code");
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const redirectTo = new URL(next, siteUrl);
 
   const supabase = await createClient();
 
