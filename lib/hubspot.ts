@@ -379,7 +379,7 @@ export async function getContactDeals(contactId: string) {
 }
 
 export async function getDeal(dealId: string) {
-  return hubspotRequest(`/crm/v3/objects/deal/${dealId}?properties=dealname,dealstage,amount,hs_lastmodifieddate`);
+  return hubspotRequest(`/crm/v3/objects/deal/${dealId}?properties=dealname,dealstage,amount,hs_lastmodifieddate,codigo_de_expediente`);
 }
 
 export async function getTicket(ticketId: string) {

@@ -45,7 +45,17 @@ const INCIDENT_CATEGORIES = {
 
 type InstallationType = keyof typeof INCIDENT_CATEGORIES;
 
-export function NewTicketForm() {
+interface NewTicketFormProps {
+  defaultName?: string;
+  defaultEmail?: string;
+  defaultExpediente?: string;
+}
+
+export function NewTicketForm({ 
+  defaultName = "", 
+  defaultEmail = "", 
+  defaultExpediente = "" 
+}: NewTicketFormProps) {
   const searchParams = useSearchParams();
   const dealId = searchParams.get("dealId");
   const urlType = searchParams.get("type");
@@ -91,7 +101,7 @@ export function NewTicketForm() {
       formData.append("attachments", file);
     });
 
-    // Subject is required in HubSpot API but we might want it calculated to match screenshot's simple vibe
+    // Subject calculation
     const subject = `Incidencia ${installationType}: ${subCategory}`;
     formData.append("subject", subject);
 
@@ -110,53 +120,16 @@ export function NewTicketForm() {
       <Card className="border-2 shadow-2xl shadow-primary/5 rounded-3xl overflow-hidden">
         <CardContent className="p-8 md:p-12">
           <div className="mb-10">
-            <h1 className="text-3xl font-black tracking-tighter">Apertura de incidencia<span className="text-primary">.</span></h1>
-            <p className="text-muted-foreground mt-2 font-medium">Relata tu problema y adjunta la información necesaria.</p>
+            <h1 className="text-3xl font-black tracking-tighter font-jakarta">Reportar incidencia<span className="text-primary">.</span></h1>
+            <p className="text-muted-foreground mt-2 font-medium">Completa los detalles técnicos del problema.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Person Info Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="text-xs font-black uppercase tracking-widest opacity-70">Nombre del titular</Label>
-                <Input
-                  id="full_name"
-                  name="full_name"
-                  placeholder="Juan Pérez"
-                  className="rounded-xl border-2 h-12 focus-visible:ring-primary"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="installation_code" className="text-xs font-black uppercase tracking-widest opacity-70">Código de instalación</Label>
-                <div className="relative">
-                  <Input
-                    id="installation_code"
-                    name="installation_code"
-                    placeholder="25ABC00000"
-                    className="rounded-xl border-2 h-12 focus-visible:ring-primary pr-10"
-                    required
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <AlertCircle className="size-4" />
-                  </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground italic">Lo encontrarás en tu factura o app de monitorización.</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs font-black uppercase tracking-widest opacity-70">Correo electrónico</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="juan@ejemplo.com"
-                className="rounded-xl border-2 h-12 focus-visible:ring-primary"
-                required
-              />
-            </div>
+            {/* Hidden technical fields */}
+            <input type="hidden" name="full_name" value={defaultName} />
+            <input type="hidden" name="email" value={defaultEmail} />
+            <input type="hidden" name="installation_code" value={defaultExpediente} />
+            {dealId && <input type="hidden" name="dealId" value={dealId} />}
 
             {/* Categorization Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
