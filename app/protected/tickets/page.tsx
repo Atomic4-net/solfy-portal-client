@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, AlertCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { TicketList } from "@/components/ticket-list";
+import { isTicketOpen } from "@/lib/ticket-utils";
 
 export default async function TicketsPage() {
   const supabase = await createClient();
@@ -22,11 +23,15 @@ export default async function TicketsPage() {
     ? await getTicketsByContactId(profile.hubspot_contact_id)
     : [];
 
-  // KPI Calculations
+  // KPI Calculations using new status utility
   const totalTickets = tickets.length;
-  const openTickets = tickets.filter((t: any) => t.properties.hs_pipeline_stage !== "Cerrado" && t.properties.hs_pipeline_stage !== "Resuelto").length;
-  const highPriority = tickets.filter((t: any) => t.properties.hs_ticket_priority === "HIGH").length;
-  const lastUpdate = tickets.length > 0 ? new Date(tickets[0].properties.createdate).toLocaleDateString('es', { day: '2-digit', month: 'short' }) : "N/A";
+  const openTickets = tickets.filter((t: any) => isTicketOpen(t.properties.hs_pipeline_stage)).length;
+  const highPriority = tickets.filter((t: any) => 
+    t.properties.hs_ticket_priority === "HIGH" || t.properties.hs_ticket_priority === "ALTA"
+  ).length;
+  const lastUpdate = tickets.length > 0 
+    ? new Date(tickets[0].properties.createdate).toLocaleDateString('es', { day: '2-digit', month: 'short' }) 
+    : "N/A";
 
   return (
     <div className="space-y-10">

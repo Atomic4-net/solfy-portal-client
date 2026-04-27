@@ -2,9 +2,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Tag, AlertCircle, Briefcase, Info, Clock } from "lucide-react";
+import { Calendar, Tag, AlertCircle, Briefcase, Info, Clock, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getTicketStatus } from "@/lib/ticket-utils";
 
 interface TicketInfoSidebarProps {
   ticket: {
@@ -22,6 +23,7 @@ interface TicketInfoSidebarProps {
 
 export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
   const isHighPriority = ticket.priority === "HIGH" || ticket.priority === "ALTA";
+  const statusInfo = getTicketStatus(ticket.status);
 
   return (
     <div className="space-y-6 flex flex-col h-full overflow-y-auto pr-1 pb-8 custom-scrollbar">
@@ -34,6 +36,18 @@ export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
         </CardHeader>
         <CardContent className="px-0 space-y-6">
           <div className="space-y-4">
+            <div className="space-y-1.5">
+               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Activity className="h-3 w-3" /> Estado Actual
+               </span>
+               <Badge 
+                  variant={statusInfo.variant} 
+                  className="uppercase font-black text-[10px] px-3 py-1 border-2 border-transparent shadow-none rounded-full"
+               >
+                  {statusInfo.label}
+               </Badge>
+            </div>
+
             <div className="space-y-1.5">
                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <AlertCircle className="h-3 w-3" /> Prioridad
