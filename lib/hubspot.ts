@@ -44,6 +44,27 @@ export async function getContactByEmail(email: string) {
   }
 }
 
+export async function getContactTickets(contactId: string) {
+  try {
+    const associations = await hubspotRequest(`/crm/v4/objects/contact/${contactId}/associations/ticket`);
+    const ticketIds = associations.results.map((res: any) => res.toObjectId);
+    if (ticketIds.length === 0) return [];
+
+    const tickets = await hubspotRequest(`/crm/v3/objects/tickets/batch/read`, {
+      method: "POST",
+      body: JSON.stringify({
+        inputs: ticketIds.map((id: string) => ({ id })),
+        properties: ["subject", "hs_pipeline_stage", "createdate", "portal_ticket_id"],
+      }),
+    });
+
+    return tickets.results;
+  } catch (error) {
+    console.error(`Error fetching tickets for contact ${contactId}:`, error);
+    return [];
+  }
+}
+
 export async function getTicketsByContactId(contactId: string) {
   // 1. Get associations
   const associations = await hubspotRequest(`/crm/v4/objects/contact/${contactId}/associations/ticket`);
@@ -63,8 +84,25 @@ export async function getTicketsByContactId(contactId: string) {
   return tickets.results;
 }
 
-export async function createTicket(contactId: string, { subject, content, portalId, dealId }: { subject: string, content: string, portalId: string, dealId?: string }) {
-  // 1. Create ticket
+export async function createTicket(
+  contactId: string, 
+  { 
+    subject, 
+    content, 
+    portalId, 
+    dealId, 
+    properties = {},
+    attachmentIds = [] 
+  }: { 
+    subject: string, 
+    content: string, 
+    portalId: string, 
+    dealId?: string,
+    properties?: Record<string, any>,
+    attachmentIds?: string[]
+  }
+) {
+  // 1. Create ticket with dynamic properties
   const ticket = await hubspotRequest(`/crm/v3/objects/tickets`, {
     method: 'POST',
     body: JSON.stringify({
@@ -73,6 +111,9 @@ export async function createTicket(contactId: string, { subject, content, portal
         content,
         hs_pipeline: '0', // Default pipeline
         hs_pipeline_stage: '3', // Default "New" stage for tickets
+        portal_ticket_id: portalId, // Map our internal ID
+        hs_attachment_ids: attachmentIds.length > 0 ? attachmentIds.join(';') : undefined,
+        ...properties
       }
     })
   });
@@ -112,6 +153,44 @@ export async function createTicket(contactId: string, { subject, content, portal
   }
 
   return ticket;
+}
+
+/**
+ * Uploads a file to HubSpot Files API v3
+ * @param file The file object from a form
+ * @returns The Hubspot File ID
+ */
+export async function uploadFile(file: File) {
+  if (!HUBSPOT_ACCESS_TOKEN) {
+    throw new Error('HUBSPOT_ACCESS_TOKEN is not defined');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('fileName', file.name);
+  formData.append('options', JSON.stringify({
+    access: 'PRIVATE', // Tickets usually need private/protected access
+    overwrite: false
+  }));
+
+  const response = await fetch(`${HUBSPOT_API_URL}/files/v3/files`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+      // Note: 'Content-Type' should NOT be set manually when using FormData
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    console.error(`DEBUG: HubSpot File Upload Error ${response.status} ->`, JSON.stringify(errorData, null, 2));
+    throw new Error(`HubSpot File upload error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log(`DEBUG: HubSpot File Upload Success -> ID: ${data.id}`);
+  return data.id as string;
 }
 
 export async function getTicketMessages(ticketId: string) {
@@ -300,7 +379,7 @@ export async function getContactDeals(contactId: string) {
 }
 
 export async function getDeal(dealId: string) {
-  return hubspotRequest(`/crm/v3/objects/deal/${dealId}?properties=dealname,dealstage,amount,hs_lastmodifieddate`);
+  return hubspotRequest(`/crm/v3/objects/deal/${dealId}?properties=dealname,dealstage,amount,hs_lastmodifieddate,codigo_de_expediente`);
 }
 
 export async function getTicket(ticketId: string) {
@@ -321,7 +400,7 @@ export async function getDealTickets(dealId: string) {
       method: "POST",
       body: JSON.stringify({
         inputs: ticketIds.map((id: string) => ({ id })),
-        properties: ["subject", "hs_pipeline_stage", "hs_ticket_priority", "createdate", "portal_ticket_id"],
+        properties: ["subject", "content", "hs_ticket_priority", "hs_ticket_category", "hs_pipeline_stage", "createdate", "portal_ticket_id"],
       }),
     });
 
@@ -343,26 +422,5 @@ export async function getTicketContact(ticketId: string) {
   } catch (error) {
     console.error(`Error fetching contact for ticket ${ticketId}:`, error);
     return null;
-  }
-}
-
-export async function getContactTickets(contactId: string) {
-  try {
-    const associations = await hubspotRequest(`/crm/v4/objects/contact/${contactId}/associations/ticket`);
-    const ticketIds = associations.results.map((res: any) => res.toObjectId);
-    if (ticketIds.length === 0) return [];
-
-    const tickets = await hubspotRequest(`/crm/v3/objects/tickets/batch/read`, {
-      method: "POST",
-      body: JSON.stringify({
-        inputs: ticketIds.map((id: string) => ({ id })),
-        properties: ["subject", "hs_pipeline_stage", "createdate", "portal_ticket_id"],
-      }),
-    });
-
-    return tickets.results;
-  } catch (error) {
-    console.error(`Error fetching tickets for contact ${contactId}:`, error);
-    return [];
   }
 }

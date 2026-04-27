@@ -10,12 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default async function ProtectedPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
+  redirect("/protected/tickets");
 
   // 1. Get Profile
   let { data: profile } = await supabase
