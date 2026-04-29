@@ -43,30 +43,45 @@ const INCIDENT_CATEGORIES = {
   ]
 } as const;
 
+const DOCUMENTATION_CATEGORIES = [
+  "IBI/Requerimientos",
+  "Legalizaciones",
+  "Permisos municipales/requerimientos/pagos",
+  "Certificados energéticos",
+  "Gestión subvenciones",
+  "Otros"
+];
+
 type InstallationType = keyof typeof INCIDENT_CATEGORIES;
 
 interface NewTicketFormProps {
   defaultName?: string;
   defaultEmail?: string;
   defaultExpediente?: string;
+  formCategory?: "asistencia" | "documentacion";
 }
 
 export function NewTicketForm({ 
   defaultName = "", 
   defaultEmail = "", 
-  defaultExpediente = "" 
+  defaultExpediente = "",
+  formCategory = "asistencia"
 }: NewTicketFormProps) {
   const searchParams = useSearchParams();
   const dealId = searchParams.get("dealId");
   const urlType = searchParams.get("type");
   
-  // Logic to determine initial type from URL
+  // Asistencia state
   const [installationType, setInstallationType] = useState<InstallationType | "">(
     (urlType && Object.keys(INCIDENT_CATEGORIES).includes(urlType)) 
       ? urlType as InstallationType 
       : ""
   );
   const [subCategory, setSubCategory] = useState<string>("");
+  
+  // Documentacion state
+  const [docCategory, setDocCategory] = useState<string>("");
+
   const [files, setFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +117,14 @@ export function NewTicketForm({
     });
 
     // Subject calculation
-    const subject = `Incidencia ${installationType}: ${subCategory}`;
+    let subject = "";
+    if (formCategory === "asistencia") {
+      subject = `Incidencia ${installationType}: ${subCategory}`;
+    } else {
+      subject = `Documentación: ${docCategory}`;
+      // Also pass the doc category to the form data so the server action can process it if needed
+      formData.append("TICKET.tipologia_documentacion", docCategory);
+    }
     formData.append("subject", subject);
 
     const result = await createTicketAction(formData);
@@ -120,8 +142,14 @@ export function NewTicketForm({
       <Card className="border-2 shadow-2xl shadow-primary/5 rounded-3xl overflow-hidden">
         <CardContent className="p-8 md:p-12">
           <div className="mb-10">
-            <h1 className="text-3xl font-black tracking-tighter font-jakarta">Reportar incidencia<span className="text-primary">.</span></h1>
-            <p className="text-muted-foreground mt-2 font-medium">Completa los detalles técnicos del problema.</p>
+            <h1 className="text-3xl font-black tracking-tighter font-jakarta">
+              {formCategory === "asistencia" ? "Reportar incidencia" : "Solicitud de documentación"}<span className="text-primary">.</span>
+            </h1>
+            <p className="text-muted-foreground mt-2 font-medium">
+              {formCategory === "asistencia" 
+                ? "Completa los detalles técnicos del problema." 
+                : "Indícanos qué documentación necesitas gestionar."}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -132,58 +160,82 @@ export function NewTicketForm({
             {dealId && <input type="hidden" name="dealId" value={dealId} />}
 
             {/* Categorization Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {formCategory === "asistencia" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipo de instalación</Label>
+                  <Select 
+                    name="TICKET.tipologia_incidencia" 
+                    value={installationType}
+                    onValueChange={(val) => {
+                      setInstallationType(val as InstallationType);
+                      setSubCategory(""); // Reset sub when type changes
+                    }}
+                    required
+                  >
+                    <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary">
+                      <SelectValue placeholder="Selecciona el sistema" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {Object.keys(INCIDENT_CATEGORIES).map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de la incidencia</Label>
+                  <Select 
+                    name={installationType === "Sistema Fotovoltaico" ? "TICKET.sub_categorias_incidencias" : 
+                          installationType === "Sistema de Aerotermia" ? "TICKET.sub_categorias_incidencias___aerotermia" : 
+                          "TICKET.sub_categoria_incidencia___cargador_coche_electrico"} 
+                    value={subCategory}
+                    onValueChange={setSubCategory}
+                    disabled={!installationType}
+                    required
+                  >
+                    <SelectTrigger className={cn("rounded-xl border-2 h-12 focus:ring-primary", !installationType && "opacity-50")}>
+                      <SelectValue placeholder={installationType ? "Selecciona..." : "Primero elige sistema"} />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl max-h-[300px]">
+                      {currentSubCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : (
               <div className="space-y-2">
-                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipo de instalación</Label>
+                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de consulta</Label>
                 <Select 
-                  name="TICKET.tipologia_incidencia" 
-                  value={installationType}
-                  onValueChange={(val) => {
-                    setInstallationType(val as InstallationType);
-                    setSubCategory(""); // Reset sub when type changes
-                  }}
+                  value={docCategory}
+                  onValueChange={setDocCategory}
                   required
                 >
-                  <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary">
-                    <SelectValue placeholder="Selecciona el sistema" />
+                  <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary w-full">
+                    <SelectValue placeholder="Indícanos la tipología de consulta" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {Object.keys(INCIDENT_CATEGORIES).map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de la incidencia</Label>
-                <Select 
-                  name={installationType === "Sistema Fotovoltaico" ? "TICKET.sub_categorias_incidencias" : 
-                        installationType === "Sistema de Aerotermia" ? "TICKET.sub_categorias_incidencias___aerotermia" : 
-                        "TICKET.sub_categoria_incidencia___cargador_coche_electrico"} 
-                  value={subCategory}
-                  onValueChange={setSubCategory}
-                  disabled={!installationType}
-                  required
-                >
-                  <SelectTrigger className={cn("rounded-xl border-2 h-12 focus:ring-primary", !installationType && "opacity-50")}>
-                    <SelectValue placeholder={installationType ? "Selecciona..." : "Primero elige sistema"} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl max-h-[300px]">
-                    {currentSubCategories.map(cat => (
+                    {DOCUMENTATION_CATEGORIES.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="content" className="text-xs font-black uppercase tracking-widest opacity-70">Explícanos tu incidencia</Label>
+              <Label htmlFor="content" className="text-xs font-black uppercase tracking-widest opacity-70">
+                {formCategory === "asistencia" ? "Explícanos tu incidencia" : "Descripción"}
+              </Label>
               <Textarea
                 id="content"
                 name="content"
-                placeholder="Describe qué sucede con el mayor detalle posible..."
+                placeholder={formCategory === "asistencia" 
+                  ? "Describe qué sucede con el mayor detalle posible..."
+                  : "Explícanos los detalles de tu consulta"}
                 className="min-h-[150px] rounded-2xl border-2 focus-visible:ring-primary p-4"
                 required
               />
@@ -257,11 +309,11 @@ export function NewTicketForm({
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <span className="animate-spin size-4 border-2 border-current border-t-transparent rounded-full" />
-                    Enviando incidencia...
+                    Enviando solicitud...
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    Enviar reporte
+                    Enviar solicitud
                     <CheckCircle2 className="size-5" />
                   </div>
                 )}

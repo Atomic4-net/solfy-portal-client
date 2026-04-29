@@ -82,20 +82,14 @@ export default async function NewTicketPage({
          )}
 
          {category === "documentacion" && (
-           <div className="bg-card border-2 border-dashed rounded-[2rem] p-20 text-center space-y-4">
-              <div className="h-20 w-20 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <FileSearch className="h-10 w-10" />
-              </div>
-              <h2 className="text-2xl font-black font-jakarta tracking-tight">Formulario de Documentación</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto font-medium">
-                Estamos terminando de preparar este formulario. Envíanos un correo a soporte mientras tanto.
-              </p>
-           </div>
+           <NewTicketForm 
+              defaultName={profile?.full_name || ""}
+              defaultEmail={user.email || ""}
+              defaultExpediente={codigoExpediente}
+              formCategory="documentacion"
+           />
          )}
       </Suspense>
     </div>
   );
 }
-
-// Add fake FileSearch for the placeholder if it's not imported globally
-import { FileSearch } from "lucide-react";
