@@ -67,7 +67,7 @@ export default async function TicketPage({
         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
           <Link href="/protected/tickets" className="hover:text-foreground transition-colors font-bold uppercase tracking-tight text-[10px]">Mis Tickets</Link>
           <ChevronRight className="h-3 w-3 opacity-50" />
-          <span className="text-foreground font-black uppercase tracking-tight text-[10px]">Tiquet {displayPortalId}</span>
+          <span className="text-foreground font-black uppercase tracking-tight text-[10px]">Ticket {displayPortalId}</span>
         </div>
         <div className="flex items-center gap-4">
           <Link href={`/protected/tickets`}>

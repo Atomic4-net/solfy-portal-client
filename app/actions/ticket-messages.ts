@@ -1,15 +1,31 @@
 "use server";
 
-import { sendTicketMessage } from "@/lib/hubspot";
+import { sendTicketMessage, uploadFile } from "@/lib/hubspot";
 import { revalidatePath } from "next/cache";
 
-export async function sendTicketMessageAction(ticketId: string, message: string) {
-  if (!message.trim()) {
+export async function sendTicketMessageAction(formData: FormData) {
+  const ticketId = formData.get("ticketId") as string;
+  const message = formData.get("message") as string;
+  const files = formData.getAll("files") as File[];
+
+  if (!message.trim() && files.length === 0) {
     return { error: "El mensaje no puede estar vacío" };
   }
 
   try {
-    await sendTicketMessage(ticketId, message);
+    const attachmentIds: string[] = [];
+    
+    // 1. Upload files if any
+    for (const file of files) {
+      if (file.size > 0) {
+        const id = await uploadFile(file);
+        attachmentIds.push(id);
+      }
+    }
+
+    // 2. Send message with attachments
+    await sendTicketMessage(ticketId, message, attachmentIds);
+    
     revalidatePath(`/protected/tickets/${ticketId}`);
     return { success: true };
   } catch (error) {

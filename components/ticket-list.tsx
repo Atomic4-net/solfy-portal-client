@@ -103,8 +103,6 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
               <TableHead className="w-[140px] font-black uppercase text-[10px] tracking-widest text-muted-foreground py-4 px-6">Ticket ID</TableHead>
               <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Asunto</TableHead>
               <TableHead className="w-[160px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Estado</TableHead>
-              <TableHead className="w-[120px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Prioridad</TableHead>
-              <TableHead className="w-[150px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Categoría</TableHead>
               <TableHead className="w-[180px] font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right px-6">Fecha creación</TableHead>
             </TableRow>
           </TableHeader>
@@ -112,7 +110,6 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
             {filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => {
                 const portalId = ticket.properties.portal_ticket_id ? `#SOL-${ticket.properties.portal_ticket_id}` : `#${ticket.id.slice(-5)}`;
-                const priority = ticket.properties.hs_ticket_priority || "NORMAL";
                 const status = getTicketStatus(ticket.properties.hs_pipeline_stage);
                 
                 return (
@@ -142,17 +139,6 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
                           {status.label}
                         </Badge>
                     </TableCell>
-                    <TableCell>
-                       <Badge variant="outline" className={cn("rounded-full border font-black uppercase text-[9px] px-3 py-0.5", getPriorityStyle(priority))}>
-                          {priority}
-                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-tight bg-muted/50 w-fit px-3 py-1 rounded-lg border border-border">
-                           {getCategoryIcon(ticket.properties.hs_ticket_category)}
-                           {ticket.properties.hs_ticket_category || "General"}
-                        </div>
-                    </TableCell>
                     <TableCell className="text-right px-6">
                        <span className="text-[11px] font-bold text-muted-foreground/80 uppercase tracking-tighter">
                           {format(new Date(ticket.properties.createdate), "dd MMM yyyy", { locale: es })}
@@ -163,7 +149,7 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="py-24 text-center">
+                <TableCell colSpan={4} className="py-24 text-center">
                   <div className="flex flex-col items-center gap-2 opacity-40">
                      <Search className="h-10 w-10 mb-2" />
                      <p className="text-sm font-black uppercase tracking-widest">No se han encontrado tickets</p>
@@ -178,10 +164,6 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
 
       <div className="flex items-center justify-between px-2">
          <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Mostrando {filteredTickets.length} resultados</p>
-         <div className="flex gap-4">
-             <span className="text-[10px] font-bold text-muted-foreground hover:text-primary cursor-pointer transition-colors uppercase tracking-widest">Descargar CSV</span>
-             <span className="text-[10px] font-bold text-muted-foreground hover:text-primary cursor-pointer transition-colors uppercase tracking-widest">Imprimir Lista</span>
-         </div>
       </div>
     </div>
   );

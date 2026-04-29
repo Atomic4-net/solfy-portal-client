@@ -20,8 +20,10 @@ interface Message {
 export function TicketChat({ ticketId, initialMessages }: { ticketId: string, initialMessages: any[] }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages || []);
   const [inputValue, setInputValue] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -32,22 +34,42 @@ export function TicketChat({ ticketId, initialMessages }: { ticketId: string, in
     }
   }, [messages]);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    if ((!inputValue.trim() && selectedFiles.length === 0) || isLoading) return;
 
     setIsLoading(true);
     const textToSend = inputValue;
+    const filesToSend = [...selectedFiles];
+    
     setInputValue("");
+    setSelectedFiles([]);
 
     try {
-      const result = await sendTicketMessageAction(ticketId, textToSend);
+      const formData = new FormData();
+      formData.append("ticketId", ticketId);
+      formData.append("message", textToSend);
+      filesToSend.forEach(file => formData.append("files", file));
+
+      const result = await sendTicketMessageAction(formData);
+      
       if (result.error) {
         setInputValue(textToSend);
+        setSelectedFiles(filesToSend);
       } else {
         const newMessage: Message = {
           id: Date.now().toString(),
-          text: textToSend,
+          text: textToSend || (filesToSend.length > 0 ? "Enviado un archivo" : ""),
           sender: "user",
           timestamp: new Date().toISOString(),
         };
@@ -139,20 +161,25 @@ export function TicketChat({ ticketId, initialMessages }: { ticketId: string, in
 
       {/* Modern Editor Container */}
       <div className="px-6 pb-6 pt-2 bg-background relative z-10 border-t">
+        {/* Selected Files Preview */}
+        {selectedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {selectedFiles.map((file, i) => (
+              <div key={i} className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full border border-border">
+                <Paperclip className="h-3 w-3 text-muted-foreground" />
+                <span className="text-[10px] font-bold truncate max-w-[150px]">{file.name}</span>
+                <button type="button" onClick={() => removeFile(i)} className="text-muted-foreground hover:text-destructive">
+                  <span className="text-[12px] leading-none">&times;</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <form 
             onSubmit={handleSendMessage} 
             className="flex flex-col rounded-2xl border border-border bg-card focus-within:ring-1 focus-within:ring-ring transition-all shadow-sm overflow-hidden"
         >
-          {/* Editor Toolbar */}
-          <div className="flex items-center gap-1 p-2 border-b border-border bg-muted/50">
-             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Bold className="h-4 w-4" /></Button>
-             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Italic className="h-4 w-4" /></Button>
-             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><List className="h-4 w-4" /></Button>
-             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><LinkIcon className="h-4 w-4" /></Button>
-             <div className="mx-1 w-px h-4 bg-border" />
-             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground"><Smile className="h-4 w-4" /></Button>
-          </div>
-
           {/* Textarea Area */}
           <div className="relative flex items-end p-4 min-h-[100px]">
             <textarea
@@ -160,20 +187,22 @@ export function TicketChat({ ticketId, initialMessages }: { ticketId: string, in
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Escribe tu respuesta aquí..."
                 className="flex-1 bg-transparent border-none focus:ring-0 resize-none text-sm font-medium leading-relaxed min-h-[60px] text-foreground placeholder:text-muted-foreground/50"
-                onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage(e);
-                    }
-                }}
             />
             
             <div className="flex items-center gap-3">
+                <input 
+                  type="file" 
+                  multiple 
+                  className="hidden" 
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                />
                 <Button 
                     type="button" 
                     variant="ghost" 
                     size="icon" 
                     className="h-9 w-9 rounded-full text-muted-foreground hover:bg-muted"
+                    onClick={() => fileInputRef.current?.click()}
                 >
                     <Paperclip className="h-4 w-4" />
                 </Button>
@@ -184,20 +213,13 @@ export function TicketChat({ ticketId, initialMessages }: { ticketId: string, in
                         "h-10 w-10 rounded-full shadow-lg transition-transform active:scale-95",
                         isLoading ? "opacity-50" : ""
                     )}
-                    disabled={!inputValue.trim() || isLoading}
+                    disabled={(!inputValue.trim() && selectedFiles.length === 0) || isLoading}
                 >
                     <Send className={cn("h-4 w-4", isLoading && "animate-spin")} />
                 </Button>
             </div>
           </div>
         </form>
-        
-        <div className="flex items-center justify-between mt-3 px-2">
-            <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-tighter">Enter para enviar • Shift+Enter para nueva línea</span>
-            <div className="flex gap-4">
-                 <span className="text-[10px] font-bold text-muted-foreground hover:text-primary cursor-pointer transition-colors">Normas de la comunidad</span>
-            </div>
-        </div>
       </div>
     </div>
   );

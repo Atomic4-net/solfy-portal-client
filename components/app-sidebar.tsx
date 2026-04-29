@@ -90,14 +90,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="p-4">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Ver Perfil" className="font-bold mb-2">
-              <Link href="/protected/profile">
-                <User className="size-4" />
-                <span>Mi Perfil</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
             <SidebarMenuButton onClick={handleSignOut} tooltip="Cerrar sesión" className="font-bold text-destructive hover:text-destructive hover:bg-destructive/10">
               <LogOut className="size-4" />
               <span>Cerrar sesión</span>

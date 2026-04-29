@@ -322,7 +322,7 @@ export async function getTicketMessages(ticketId: string) {
   }
 }
 
-export async function sendTicketMessage(ticketId: string, message: string) {
+export async function sendTicketMessage(ticketId: string, message: string, attachmentIds: string[] = []) {
   try {
     // 1. Fetch current ticket to get the subject for the email
     const ticket = await getTicket(ticketId);
@@ -337,6 +337,7 @@ export async function sendTicketMessage(ticketId: string, message: string) {
           hs_email_subject: `Re: ${subject}`,
           hs_email_text: message,
           hs_timestamp: new Date().toISOString(),
+          hs_attachment_ids: attachmentIds.length > 0 ? attachmentIds.join(';') : undefined,
         }
       })
     });
