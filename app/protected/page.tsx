@@ -12,31 +12,37 @@ import { es } from "date-fns/locale";
 export default async function ProtectedPage() {
   redirect("/protected/tickets");
 
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return redirect("/auth/login");
+  }
+
   // 1. Get Profile
   let { data: profile } = await supabase
     .from('user_profiles')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single();
 
   // HEAL: If no profile exists for an authenticated user, try to create it from HubSpot
-  if (!profile && user.email) {
-    console.log(`DEBUG: Profile missing for ${user.email}. Attempting auto-creation...`);
-    const contact = await getContactByEmail(user.email);
+  if (!profile && user!.email) {
+    console.log(`DEBUG: Profile missing for ${user!.email}. Attempting auto-creation...`);
+    const contact = await getContactByEmail(user!.email as string);
     if (contact) {
       const { data: newProfile, error } = await supabase
         .from('user_profiles')
         .insert({
-          id: user.id,
+          id: user!.id,
           hubspot_contact_id: contact.id,
-          full_name: `${contact.properties.firstname || ''} ${contact.properties.lastname || ''}`.trim() || user.email
+          full_name: `${contact.properties.firstname || ''} ${contact.properties.lastname || ''}`.trim() || (user!.email as string)
         })
         .select()
         .single();
       
       if (!error) {
         profile = newProfile;
-        console.log(`DEBUG: Profile auto-created for ${user.email}`);
+        console.log(`DEBUG: Profile auto-created for ${user!.email}`);
       } else {
         console.error("DEBUG: Failed to auto-create profile:", error);
       }
