@@ -186,11 +186,13 @@ export async function uploadFile(file: File) {
     throw new Error('HUBSPOT_ACCESS_TOKEN is not defined');
   }
 
+  console.log(`DEBUG: Uploading file to HubSpot: ${file.name} (${file.size} bytes)`);
+  
   const formData = new FormData();
   formData.append('file', file);
   formData.append('fileName', file.name);
   formData.append('options', JSON.stringify({
-    access: 'PRIVATE', // Tickets usually need private/protected access
+    access: 'PRIVATE',
     overwrite: false
   }));
 
@@ -198,14 +200,13 @@ export async function uploadFile(file: File) {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
-      // Note: 'Content-Type' should NOT be set manually when using FormData
     },
     body: formData,
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    console.error(`DEBUG: HubSpot File Upload Error ${response.status} ->`, JSON.stringify(errorData, null, 2));
+    const errorBody = await response.text();
+    console.error(`DEBUG: HubSpot File Upload Error ${response.status}:`, errorBody);
     throw new Error(`HubSpot File upload error: ${response.status}`);
   }
 
@@ -345,18 +346,25 @@ export async function getTicketMessages(ticketId: string) {
 
 export async function sendTicketMessage(ticketId: string, message: string, attachmentIds: string[] = []) {
   try {
+    console.log(`DEBUG: Sending message to Ticket ${ticketId} with ${attachmentIds.length} attachments`);
+    
     // 1. Fetch current ticket to get the subject for the email
-    const ticket = await getTicket(ticketId);
+    const ticket = await getTicket(ticketId).catch(e => {
+      console.error("DEBUG: Failed to fetch ticket for subject:", e.message);
+      return null;
+    });
     const subject = ticket?.properties?.subject || "Consulta desde el Portal";
 
     // 2. Create an Email object (INCOMING_EMAIL)
+    console.log(`DEBUG: Creating INCOMING_EMAIL engagement...`);
     const email = await hubspotRequest(`/crm/v3/objects/emails`, {
       method: "POST",
       body: JSON.stringify({
         properties: {
           hs_email_direction: "INCOMING_EMAIL",
           hs_email_subject: `Re: ${subject}`,
-          hs_email_text: message,
+          hs_email_text: message || "Archivo adjunto desde el portal",
+          hs_email_html: message ? `<div>${message}</div>` : "<div>Archivo adjunto desde el portal</div>",
           hs_timestamp: new Date().toISOString(),
           hs_attachment_ids: attachmentIds.length > 0 ? attachmentIds.join(';') : undefined,
         }
@@ -364,6 +372,7 @@ export async function sendTicketMessage(ticketId: string, message: string, attac
     });
 
     // 3. Associate Email with Ticket (using v4 default association)
+    console.log(`DEBUG: Associating Email ${email.id} with Ticket ${ticketId}`);
     await hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/default/email/${email.id}`, {
       method: "PUT"
     });

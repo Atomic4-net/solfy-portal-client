@@ -28,8 +28,8 @@ export async function sendTicketMessageAction(formData: FormData) {
     
     revalidatePath(`/protected/tickets/${ticketId}`);
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error sending message action:", error);
-    return { error: "No se ha podido enviar el mensaje. Inténtalo de nuevo." };
+    return { error: error.message || "No se ha podido enviar el mensaje. Inténtalo de nuevo." };
   }
 }
