@@ -65,9 +65,9 @@ export default async function TicketPage({
       {/* Top Header / Breadcrumbs */}
       <header className="h-16 px-6 border-b bg-background flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-          <Link href="/protected/tickets" className="hover:text-foreground transition-colors font-bold uppercase tracking-tight text-[10px]">Mis Tickets</Link>
+          <Link href="/protected/tickets" className="hover:text-foreground transition-colors font-bold uppercase tracking-tight text-[10px]">Mis Solicitudes</Link>
           <ChevronRight className="h-3 w-3 opacity-50" />
-          <span className="text-foreground font-black uppercase tracking-tight text-[10px]">Ticket {displayPortalId}</span>
+          <span className="text-foreground font-black uppercase tracking-tight text-[10px]">Solicitud {displayPortalId}</span>
         </div>
         <div className="flex items-center gap-4">
           <Link href={`/protected/tickets`}>

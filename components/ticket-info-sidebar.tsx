@@ -48,42 +48,12 @@ export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
                </Badge>
             </div>
 
-            <div className="space-y-1.5">
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <AlertCircle className="h-3 w-3" /> Prioridad
-               </span>
-               <Badge 
-                  variant={isHighPriority ? "destructive" : "secondary"} 
-                  className="uppercase font-black text-[10px] px-3 py-1 border-0 shadow-none"
-               >
-                  {ticket.priority || "Normal"}
-               </Badge>
-            </div>
-
-            <div className="space-y-1.5">
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Tag className="h-3 w-3" /> Categoría
-               </span>
-               <p className="text-sm font-bold text-foreground/90 pl-1">
-                  {ticket.category || "Consulta General"}
-               </p>
-            </div>
-
             <div className="space-y-1.5 pt-2 border-t border-muted/50 mt-4">
                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <Calendar className="h-3 w-3" /> Fecha de apertura
                </span>
                <p className="text-sm font-bold text-foreground/90 pl-1">
                   {format(new Date(ticket.createdate), "dd 'de' MMMM, yyyy", { locale: es })}
-               </p>
-            </div>
-
-            <div className="space-y-1.5">
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Clock className="h-3 w-3" /> Última actualización
-               </span>
-               <p className="text-xs font-medium text-muted-foreground pl-1">
-                  Hoy a las {format(new Date(), "HH:mm")}
                </p>
             </div>
           </div>
@@ -102,7 +72,6 @@ export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
             <h4 className="text-sm font-black leading-tight group-hover:text-primary transition-colors">
               {project.name}
             </h4>
-            <p className="text-[9px] font-mono text-primary/40 mt-1 uppercase">ID: {project.id}</p>
           </CardContent>
         </Card>
       )}

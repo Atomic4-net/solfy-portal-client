@@ -59,17 +59,21 @@ interface NewTicketFormProps {
   defaultEmail?: string;
   defaultExpediente?: string;
   formCategory?: "asistencia" | "documentacion";
+  availableProjects?: any[];
 }
 
 export function NewTicketForm({ 
   defaultName = "", 
   defaultEmail = "", 
   defaultExpediente = "",
-  formCategory = "asistencia"
+  formCategory = "asistencia",
+  availableProjects = []
 }: NewTicketFormProps) {
   const searchParams = useSearchParams();
-  const dealId = searchParams.get("dealId");
+  const dealIdFromUrl = searchParams.get("dealId");
   const urlType = searchParams.get("type");
+  
+  const [selectedDealId, setSelectedDealId] = useState<string>(dealIdFromUrl || "");
   
   // Asistencia state
   const [installationType, setInstallationType] = useState<InstallationType | "">(
@@ -110,7 +114,16 @@ export function NewTicketForm({
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    
+    formData.append("formCategory", formCategory);
+
+    // Hidden technical fields
+    formData.append("full_name", defaultName);
+    formData.append("email", defaultEmail);
+    formData.append("installation_code", defaultExpediente);
+    if (selectedDealId) {
+      formData.append("dealId", selectedDealId);
+    }
+
     // Explicitly add attachments
     files.forEach(file => {
       formData.append("attachments", file);
@@ -123,7 +136,7 @@ export function NewTicketForm({
     } else {
       subject = `Documentación: ${docCategory}`;
       // Also pass the doc category to the form data so the server action can process it if needed
-      formData.append("TICKET.tipologia_documentacion", docCategory);
+      formData.append("TICKET.tipologia_tramites", docCategory);
     }
     formData.append("subject", subject);
 
@@ -153,11 +166,26 @@ export function NewTicketForm({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Hidden technical fields */}
-            <input type="hidden" name="full_name" value={defaultName} />
-            <input type="hidden" name="email" value={defaultEmail} />
-            <input type="hidden" name="installation_code" value={defaultExpediente} />
-            {dealId && <input type="hidden" name="dealId" value={dealId} />}
+            {/* Project Selection (only if not pre-selected) */}
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-widest opacity-70">Asociar a un Proyecto</Label>
+              <Select 
+                value={selectedDealId}
+                onValueChange={setSelectedDealId}
+                required
+              >
+                <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary">
+                  <SelectValue placeholder="Selecciona el proyecto" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {availableProjects.map(project => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.properties.dealname}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Categorization Section */}
             {formCategory === "asistencia" ? (

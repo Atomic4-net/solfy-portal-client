@@ -127,10 +127,6 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
                             <span className="font-black text-sm tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-1">
                                 {ticket.properties.subject || "Sin asunto"}
                             </span>
-                            <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-1 mt-0.5">
-                                <Clock className="h-2.5 w-2.5" />
-                                Actualizado recientemente
-                            </span>
                          </div>
                        </Link>
                     </TableCell>

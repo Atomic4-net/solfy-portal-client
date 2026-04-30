@@ -52,7 +52,7 @@ export default async function TicketsPage({
           <div>
             <h1 className="text-3xl font-black tracking-tighter">Panel de Soporte</h1>
             <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground font-medium uppercase tracking-widest text-[10px]">
-               <span>Tickets</span>
+               <span>Solicitudes</span>
                <div className="h-1 w-1 rounded-full bg-muted-foreground/30" />
                <span>Histórico de consultas</span>
             </div>
@@ -63,17 +63,17 @@ export default async function TicketsPage({
         <Button asChild className="rounded-full shadow-lg h-10 px-6 font-black uppercase text-[11px] tracking-tight transition-transform active:scale-95">
           <Link href={dealId ? `/protected/tickets/new?dealId=${dealId}` : "/protected/tickets/new"}>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Nuevo Ticket
+            Nueva Solicitud
           </Link>
         </Button>
       </div>
 
       {/* Summary KPI Cards */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="border shadow-none rounded-2xl bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-              Total Tickets
+              Total Solicitudes
               <div className="p-1 rounded bg-muted h-5 w-5" />
             </CardTitle>
           </CardHeader>
@@ -85,7 +85,7 @@ export default async function TicketsPage({
         <Card className="border shadow-none rounded-2xl bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-              Tickets Abiertos
+              Solicitudes Abiertas
               <div className="p-1 rounded bg-secondary flex items-center justify-center h-5 w-5">
                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
               </div>
@@ -93,36 +93,6 @@ export default async function TicketsPage({
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tighter">{openTickets}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="border shadow-none rounded-2xl bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-              Alta Prioridad
-              <div className="p-1 rounded bg-destructive/10 flex items-center justify-center h-5 w-5">
-                 <AlertCircle className="h-3 w-3 text-destructive" />
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black tracking-tighter">{highPriority}</div>
-            <p className="text-[9px] font-bold text-destructive mt-1 uppercase">Atención requerida</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border shadow-none rounded-2xl bg-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
-              Última Actividad
-              <div className="p-1 rounded bg-muted flex items-center justify-center h-5 w-5">
-                 <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-black tracking-tighter">{lastUpdate}</div>
-            <p className="text-[9px] font-bold text-muted-foreground mt-1 uppercase">Sincronizado</p>
           </CardContent>
         </Card>
       </div>

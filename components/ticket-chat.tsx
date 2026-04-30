@@ -185,6 +185,12 @@ export function TicketChat({ ticketId, initialMessages }: { ticketId: string, in
             <textarea
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    // Just allow the default behavior (newline)
+                    // We explicitly don't call e.preventDefault() here if we want newlines
+                  }
+                }}
                 placeholder="Escribe tu respuesta aquí..."
                 className="flex-1 bg-transparent border-none focus:ring-0 resize-none text-sm font-medium leading-relaxed min-h-[60px] text-foreground placeholder:text-muted-foreground/50"
             />

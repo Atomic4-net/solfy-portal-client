@@ -64,10 +64,22 @@ export async function createTicketAction(formData: FormData) {
 
     // 5. Prepare extra properties for HubSpot
     const extraProperties: Record<string, string> = {};
-    if (tipologia) extraProperties["TICKET.tipologia_incidencia"] = tipologia;
-    if (subcatSolar) extraProperties["TICKET.sub_categorias_incidencias"] = subcatSolar;
-    if (subcatAero) extraProperties["TICKET.sub_categorias_incidencias___aerotermia"] = subcatAero;
-    if (subcatCargador) extraProperties["TICKET.sub_categoria_incidencia___cargador_coche_electrico"] = subcatCargador;
+    
+    // Set category based on form type
+    const formCategory = formData.get("formCategory");
+    if (formCategory === "documentacion") {
+      extraProperties["hs_ticket_category"] = "TRÁMITES / SOLICITUDES";
+    } else {
+      extraProperties["hs_ticket_category"] = "INCIDENCIAS";
+    }
+
+    // Dynamically collect all TICKET. properties and strip the prefix
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith("TICKET.")) {
+        const cleanKey = key.replace("TICKET.", "").toLowerCase();
+        extraProperties[cleanKey] = value as string;
+      }
+    }
 
     // 6. Create ticket in HubSpot
     const hsTicket = await hubspotCreateTicket(profile.hubspot_contact_id, {

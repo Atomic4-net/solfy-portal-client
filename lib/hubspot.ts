@@ -66,22 +66,44 @@ export async function getContactTickets(contactId: string) {
 }
 
 export async function getTicketsByContactId(contactId: string) {
-  // 1. Get associations
-  const associations = await hubspotRequest(`/crm/v4/objects/contact/${contactId}/associations/ticket`);
-  const ticketIds = associations.results.map((a: any) => a.toObjectId);
+  try {
+    // 1. Get tickets directly associated with contact
+    const contactAssoc = await hubspotRequest(`/crm/v4/objects/contact/${contactId}/associations/ticket`).catch(() => ({ results: [] }));
+    const directTicketIds = contactAssoc.results.map((a: any) => a.toObjectId);
 
-  if (ticketIds.length === 0) return [];
+    // 2. Get tickets associated via deals
+    const dealAssoc = await hubspotRequest(`/crm/v4/objects/contact/${contactId}/associations/deal`).catch(() => ({ results: [] }));
+    const dealIds = dealAssoc.results.map((a: any) => a.toObjectId);
+    
+    let dealTicketIds: string[] = [];
+    if (dealIds.length > 0) {
+      const dealTicketAssocs = await Promise.all(
+        dealIds.map((id: string) => 
+          hubspotRequest(`/crm/v4/objects/deal/${id}/associations/ticket`).catch(() => ({ results: [] }))
+        )
+      );
+      dealTicketIds = dealTicketAssocs.flatMap(assoc => assoc.results.map((a: any) => a.toObjectId));
+    }
 
-  // 2. Fetch ticket details in batch
-  const tickets = await hubspotRequest(`/crm/v3/objects/tickets/batch/read`, {
-    method: 'POST',
-    body: JSON.stringify({
-      inputs: ticketIds.map((id: string) => ({ id })),
-      properties: ['subject', 'content', 'hs_ticket_priority', 'hs_ticket_category', 'hs_pipeline_stage', 'createdate', 'portal_ticket_id']
-    })
-  });
+    // 3. Unique set of ticket IDs
+    const allTicketIds = Array.from(new Set([...directTicketIds, ...dealTicketIds]));
 
-  return tickets.results;
+    if (allTicketIds.length === 0) return [];
+
+    // 4. Fetch ticket details in batch
+    const tickets = await hubspotRequest(`/crm/v3/objects/tickets/batch/read`, {
+      method: 'POST',
+      body: JSON.stringify({
+        inputs: allTicketIds.map((id: string) => ({ id })),
+        properties: ['subject', 'content', 'hs_ticket_priority', 'hs_ticket_category', 'hs_pipeline_stage', 'createdate', 'portal_ticket_id']
+      })
+    });
+
+    return tickets.results;
+  } catch (error) {
+    console.error(`Error in getTicketsByContactId for contact ${contactId}:`, error);
+    return [];
+  }
 }
 
 export async function createTicket(

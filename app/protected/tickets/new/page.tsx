@@ -2,7 +2,7 @@ import { NewTicketForm } from "@/components/new-ticket-form";
 import { ServiceSelection } from "@/components/service-selection";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getDeal } from "@/lib/hubspot";
+import { getDeal, getContactDeals, WON_STAGES } from "@/lib/hubspot";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -22,12 +22,19 @@ export default async function NewTicketPage({
 
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('full_name')
+    .select('full_name, hubspot_contact_id')
     .eq('id', user.id)
     .single();
 
-  // 2. Get Deal info if dealId exists
+  // 2. Get Deal info if dealId exists, and all available projects
   let codigoExpediente = "";
+  let availableProjects: any[] = [];
+  
+  if (profile?.hubspot_contact_id) {
+    const deals = await getContactDeals(profile.hubspot_contact_id);
+    availableProjects = deals.filter((d: any) => WON_STAGES.includes(d.properties.dealstage));
+  }
+
   if (dealId) {
     try {
       const deal = await getDeal(dealId);
@@ -78,6 +85,7 @@ export default async function NewTicketPage({
               defaultName={profile?.full_name || ""}
               defaultEmail={user.email || ""}
               defaultExpediente={codigoExpediente}
+              availableProjects={availableProjects}
            />
          )}
 
@@ -87,6 +95,7 @@ export default async function NewTicketPage({
               defaultEmail={user.email || ""}
               defaultExpediente={codigoExpediente}
               formCategory="documentacion"
+              availableProjects={availableProjects}
            />
          )}
       </Suspense>

@@ -35,7 +35,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: LayoutDashboard,
     },
     {
-      title: "Todos los Tickets",
+      title: "Mis Solicitudes",
       url: "/protected/tickets",
       icon: Ticket,
     },
@@ -51,10 +51,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent">
+            <SidebarMenuButton size="lg" asChild className="hover:bg-transparent px-2">
               <Link href="/protected" className="flex items-center gap-3">
-                <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#60c6ea] to-[#8cd1c6] text-white shadow-lg shadow-primary/20">
-                  <span className="font-black text-xl tracking-tighter">S</span>
+                <div className="flex aspect-square size-10 items-center justify-center overflow-hidden">
+                  <img src="/logo.png" alt="Solfy" className="h-10 w-auto object-contain" />
                 </div>
                 <div className="grid flex-1 text-left leading-tight transition-all group-data-[collapsible=icon]:opacity-0">
                   <span className="truncate font-black text-xl tracking-tight">Solfy<span className="text-primary">.</span></span>

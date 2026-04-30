@@ -49,22 +49,16 @@ export default async function ProjectsPage() {
                   <div className="p-2 bg-primary/10 rounded-lg">
                     <Building2 className="h-6 w-6 text-primary" />
                   </div>
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                    Activo
-                  </Badge>
                 </div>
                 <CardTitle className="mt-4 text-xl group-hover:text-primary transition-colors">
                   {deal.properties.dealname}
                 </CardTitle>
                 <CardDescription>
-                   {deal.properties.amount ? `${Number(deal.properties.amount).toLocaleString('es')} €` : "Próximamente"}
+                   {deal.properties.amount ? `${Number(deal.properties.amount).toLocaleString('es')} €` : ""}
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-6">
                 <div className="flex flex-col gap-4">
-                  <div className="flex justify-between text-sm text-muted-foreground italic">
-                    <span>Instalación en curso</span>
-                  </div>
                   <Link href={`/protected/projects/${deal.id}`} className="w-full">
                     <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-white transition-all border-2">
                       Ver Tickets del Proyecto
