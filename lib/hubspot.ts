@@ -54,7 +54,7 @@ export async function getContactTickets(contactId: string) {
       method: "POST",
       body: JSON.stringify({
         inputs: ticketIds.map((id: string) => ({ id })),
-        properties: ["subject", "hs_pipeline_stage", "createdate", "portal_ticket_id"],
+        properties: ["subject", "hs_pipeline_stage", "createdate"],
       }),
     });
 
@@ -95,7 +95,7 @@ export async function getTicketsByContactId(contactId: string) {
       method: 'POST',
       body: JSON.stringify({
         inputs: allTicketIds.map((id: string) => ({ id })),
-        properties: ['subject', 'content', 'hs_ticket_priority', 'hs_ticket_category', 'hs_pipeline_stage', 'createdate', 'portal_ticket_id']
+        properties: ['subject', 'content', 'hs_ticket_priority', 'hs_ticket_category', 'hs_pipeline_stage', 'createdate']
       })
     });
 
@@ -133,7 +133,6 @@ export async function createTicket(
         content,
         hs_pipeline: '0', // Default pipeline
         hs_pipeline_stage: '3', // Default "New" stage for tickets
-        portal_ticket_id: portalId, // Map our internal ID
         hs_attachment_ids: attachmentIds.length > 0 ? attachmentIds.join(';') : undefined,
         ...properties
       }
@@ -423,7 +422,7 @@ export async function getDealTickets(dealId: string) {
       method: "POST",
       body: JSON.stringify({
         inputs: ticketIds.map((id: string) => ({ id })),
-        properties: ["subject", "content", "hs_ticket_priority", "hs_ticket_category", "hs_pipeline_stage", "createdate", "portal_ticket_id"],
+        properties: ["subject", "content", "hs_ticket_priority", "hs_ticket_category", "hs_pipeline_stage", "createdate"],
       }),
     });
 

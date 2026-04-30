@@ -65,12 +65,12 @@ export async function createTicketAction(formData: FormData) {
     // 5. Prepare extra properties for HubSpot
     const extraProperties: Record<string, string> = {};
     
-    // Set category based on form type
+    // Set category based on form type (using valid HubSpot internal keys)
     const formCategory = formData.get("formCategory");
     if (formCategory === "documentacion") {
-      extraProperties["hs_ticket_category"] = "TRÁMITES / SOLICITUDES";
+      extraProperties["hs_ticket_category"] = "GENERAL_INQUIRY";
     } else {
-      extraProperties["hs_ticket_category"] = "INCIDENCIAS";
+      extraProperties["hs_ticket_category"] = "PRODUCT_ISSUE";
     }
 
     // Dynamically collect all TICKET. properties and strip the prefix
