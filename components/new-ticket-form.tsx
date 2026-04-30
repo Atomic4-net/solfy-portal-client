@@ -316,8 +316,7 @@ export function NewTicketForm({
               </div>
             )}
 
-            {/* Hidden input for dealId */}
-            {dealId && <input type="hidden" name="dealId" value={dealId} />}
+
 
             <div className="flex flex-col sm:flex-row gap-4 pt-6">
               <Button
