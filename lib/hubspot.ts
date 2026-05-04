@@ -3,6 +3,18 @@ const HUBSPOT_API_URL = 'https://api.hubapi.com';
 
 // I'll define common stage IDs here
 export const WON_STAGES = ["71411668", "453484781"];
+const TICKET_PROPERTIES = [
+  "subject",
+  "content",
+  "hs_ticket_priority",
+  "hs_ticket_category",
+  "hs_pipeline",
+  "hs_pipeline_stage",
+  "createdate",
+  "tipologia_incidencia",
+  "tipologia",
+  "tipologia_tramites",
+];
 
 export async function hubspotRequest(endpoint: string, options: RequestInit = {}) {
   if (!HUBSPOT_ACCESS_TOKEN) {
@@ -95,7 +107,7 @@ export async function getTicketsByContactId(contactId: string) {
       method: 'POST',
       body: JSON.stringify({
         inputs: allTicketIds.map((id: string) => ({ id })),
-        properties: ['subject', 'content', 'hs_ticket_priority', 'hs_ticket_category', 'hs_pipeline_stage', 'createdate']
+        properties: TICKET_PROPERTIES
       })
     });
 
@@ -415,7 +427,9 @@ export async function getDeal(dealId: string) {
 }
 
 export async function getTicket(ticketId: string) {
-  return hubspotRequest(`/crm/v3/objects/ticket/${ticketId}?properties=subject,content,hs_ticket_priority,hs_ticket_category,hs_pipeline_stage,createdate`);
+  return hubspotRequest(
+    `/crm/v3/objects/ticket/${ticketId}?properties=${TICKET_PROPERTIES.join(",")}`,
+  );
 }
 
 export async function getDealTickets(dealId: string) {
@@ -432,7 +446,7 @@ export async function getDealTickets(dealId: string) {
       method: "POST",
       body: JSON.stringify({
         inputs: ticketIds.map((id: string) => ({ id })),
-        properties: ["subject", "content", "hs_ticket_priority", "hs_ticket_category", "hs_pipeline_stage", "createdate"],
+        properties: TICKET_PROPERTIES,
       }),
     });
 

@@ -1,9 +1,8 @@
-import { getTicket, getTicketMessages, getTicketContact, getContactTickets, hubspotRequest, getDeal } from "@/lib/hubspot";
+import { getTicket, getTicketMessages, hubspotRequest, getDeal } from "@/lib/hubspot";
 import { createClient } from "@/lib/supabase/server";
 import { TicketChat } from "@/components/ticket-chat";
-import { Badge } from "@/components/ui/badge";
 import { TicketInfoSidebar } from "@/components/ticket-info-sidebar";
-import { ArrowLeft, ChevronRight, Phone, Video, MoreHorizontal, MessageSquare, Info } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { SyncRedirect } from "@/components/sync-redirect";
@@ -17,7 +16,7 @@ export default async function TicketPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  let hubspotId = id;
+  const hubspotId = id;
   let displayPortalId = id;
 
   // 1. Resolve ID and handle redirection if it's a portal ID
@@ -39,11 +38,10 @@ export default async function TicketPage({
   }
 
   // 2. Fetch all necessary data for the new layout
-  const [hsTicket, messages, portalLookup, contact] = await Promise.all([
+  const [hsTicket, messages, portalLookup] = await Promise.all([
     getTicket(hubspotId),
     getTicketMessages(hubspotId),
     supabase.from('tickets').select('portal_id').eq('hubspot_id', hubspotId).single(),
-    getTicketContact(hubspotId)
   ]);
 
   if (!hsTicket) notFound();
@@ -65,9 +63,9 @@ export default async function TicketPage({
       {/* Top Header / Breadcrumbs */}
       <header className="h-16 px-6 border-b bg-background flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-          <Link href="/protected/tickets" className="hover:text-foreground transition-colors font-bold uppercase tracking-tight text-[10px]">Mis Solicitudes</Link>
+          <Link href="/protected/tickets" className="hover:text-foreground transition-colors font-bold uppercase tracking-tight text-[10px]">Mis Tickets</Link>
           <ChevronRight className="h-3 w-3 opacity-50" />
-          <span className="text-foreground font-black uppercase tracking-tight text-[10px]">Solicitud {displayPortalId}</span>
+          <span className="text-foreground font-black uppercase tracking-tight text-[10px]">Ticket {displayPortalId}</span>
         </div>
         <div className="flex items-center gap-4">
           <Link href={`/protected/tickets`}>

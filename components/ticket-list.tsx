@@ -12,24 +12,18 @@ import {
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Search, 
-  Calendar, 
-  AlertCircle, 
-  HelpCircle, 
-  Wrench, 
-  MessageSquare,
-  ChevronRight,
-  Clock,
-  Activity
-} from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { getTicketStatus, isTicketOpen } from "@/lib/ticket-utils";
+import { getTicketDisplayLabel, getTicketStatus, isTicketOpen } from "@/lib/ticket-utils";
 
-export function TicketList({ initialTickets }: { initialTickets: any[] }) {
+type HubspotTicket = {
+  id: string;
+  properties: Record<string, string | undefined>;
+};
+
+export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[] }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -37,10 +31,13 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
 
   // Filter logic
   const filteredTickets = tickets.filter((ticket) => {
-    const matchesSearch = ticket.properties.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         ticket.properties.portal_ticket_id?.toLowerCase().includes(searchQuery.toLowerCase());
+    const displayLabel = getTicketDisplayLabel(ticket.properties).toLowerCase();
+    const matchesSearch =
+      displayLabel.includes(searchQuery.toLowerCase()) ||
+      ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      ticket.properties.portal_ticket_id?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const isOpen = isTicketOpen(ticket.properties.hs_pipeline_stage);
+    const isOpen = isTicketOpen(ticket.properties.hs_pipeline_stage, ticket.properties.hs_pipeline);
 
     if (statusFilter === "all") return matchesSearch;
     if (statusFilter === "open") return matchesSearch && isOpen;
@@ -49,30 +46,6 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
     return matchesSearch;
   });
 
-  const getPriorityStyle = (priority: string) => {
-    switch (priority?.toUpperCase()) {
-      case "HIGH":
-      case "ALTA":
-        return "text-destructive border-destructive/20 bg-destructive/10";
-      case "MEDIUM":
-      case "MEDIA":
-        return "text-orange-500 border-orange-500/20 bg-orange-500/10";
-      case "LOW":
-      case "BAJA":
-        return "text-emerald-500 border-emerald-500/20 bg-emerald-500/10";
-      default:
-        return "text-muted-foreground border-border bg-muted";
-    }
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category?.toUpperCase()) {
-      case "MAINTENANCE": return <Wrench className="h-3.5 w-3.5" />;
-      case "QUESTION": return <HelpCircle className="h-3.5 w-3.5" />;
-      default: return <MessageSquare className="h-3.5 w-3.5" />;
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Search and Tabs Row */}
@@ -80,7 +53,7 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
         <div className="relative flex-1 max-md:w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Buscar por asunto o ID..." 
+            placeholder="Buscar por ticket o ID..." 
             className="pl-10 h-11 bg-transparent border-none focus-visible:ring-0 font-medium"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -100,8 +73,8 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent border-b">
-              <TableHead className="w-[140px] font-black uppercase text-[10px] tracking-widest text-muted-foreground py-4 px-6">Ticket ID</TableHead>
-              <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Asunto</TableHead>
+              <TableHead className="w-[160px] font-black uppercase text-[10px] tracking-widest text-muted-foreground py-4 px-6">Ticket ID</TableHead>
+              <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Ticket</TableHead>
               <TableHead className="w-[160px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Estado</TableHead>
               <TableHead className="w-[180px] font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right px-6">Fecha creación</TableHead>
             </TableRow>
@@ -109,15 +82,18 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
           <TableBody>
             {filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => {
-                const portalId = ticket.properties.portal_ticket_id ? `#SOL-${ticket.properties.portal_ticket_id}` : `#${ticket.id.slice(-5)}`;
-                const status = getTicketStatus(ticket.properties.hs_pipeline_stage);
+                const status = getTicketStatus(
+                  ticket.properties.hs_pipeline_stage,
+                  ticket.properties.hs_pipeline,
+                );
+                const displayLabel = getTicketDisplayLabel(ticket.properties);
                 
                 return (
                   <TableRow key={ticket.id} className="group hover:bg-muted/30 transition-colors cursor-pointer border-b last:border-0">
                     <TableCell className="px-6 py-5">
                       <Link href={`/protected/tickets/${ticket.id}`} className="block">
                         <span className="font-mono font-black text-xs text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                          {portalId}
+                          #{ticket.id}
                         </span>
                       </Link>
                     </TableCell>
@@ -125,7 +101,7 @@ export function TicketList({ initialTickets }: { initialTickets: any[] }) {
                        <Link href={`/protected/tickets/${ticket.id}`} className="block">
                          <div className="flex flex-col">
                             <span className="font-black text-sm tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                                {ticket.properties.subject || "Sin asunto"}
+                                {displayLabel}
                             </span>
                          </div>
                        </Link>
