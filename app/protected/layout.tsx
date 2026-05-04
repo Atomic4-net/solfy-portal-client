@@ -1,8 +1,6 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AuthButton } from "@/components/auth-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { Suspense } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { createClient } from "@/lib/supabase/server";
@@ -30,9 +28,6 @@ export default async function ProtectedLayout({
               <SidebarTrigger className="-ml-1" />
             </div>
             <div className="flex items-center gap-4">
-              <Suspense>
-                <AuthButton />
-              </Suspense>
               <ThemeSwitcher />
             </div>
           </header>

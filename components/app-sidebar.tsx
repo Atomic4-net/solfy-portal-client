@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   LogOut,
   Ticket,
-  User,
 } from "lucide-react";
 
 import {
@@ -35,7 +34,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: LayoutDashboard,
     },
     {
-      title: "Mis Solicitudes",
+      title: "Mis Tickets",
       url: "/protected/tickets",
       icon: Ticket,
     },
@@ -55,10 +54,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <Link href="/protected" className="flex items-center gap-3">
                 <div className="flex aspect-square size-10 items-center justify-center overflow-hidden">
                   <img src="/logo.png" alt="Solfy" className="h-10 w-auto object-contain" />
-                </div>
-                <div className="grid flex-1 text-left leading-tight transition-all group-data-[collapsible=icon]:opacity-0">
-                  <span className="truncate font-black text-xl tracking-tight">Solfy<span className="text-primary">.</span></span>
-                  <span className="truncate text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mt-0.5">Portal Clientes</span>
                 </div>
               </Link>
             </SidebarMenuButton>

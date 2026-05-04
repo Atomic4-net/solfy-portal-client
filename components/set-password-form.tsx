@@ -24,7 +24,7 @@ export function SetPasswordForm() {
       setError(result.error);
       setIsLoading(false);
     } else {
-      router.push("/protected");
+      router.push("/protected/tickets");
     }
   };
 
