@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -13,12 +12,6 @@ export const metadata: Metadata = {
   description: "Gestiona tus tickets de asistencia de Solfy",
 };
 
-const jakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-jakarta-sans",
-  display: "swap",
-  subsets: ["latin"],
-});
-
 export default async function RootLayout({
   children,
 }: {
@@ -26,7 +19,7 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${jakartaSans.className} antialiased font-medium`}>
+      <body className="antialiased font-medium">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

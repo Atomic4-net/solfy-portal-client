@@ -37,7 +37,10 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
       ticket.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.properties.portal_ticket_id?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const isOpen = isTicketOpen(ticket.properties.hs_pipeline_stage, ticket.properties.hs_pipeline);
+    const isOpen = isTicketOpen(
+      ticket.properties.hs_pipeline_stage ?? "",
+      ticket.properties.hs_pipeline,
+    );
 
     if (statusFilter === "all") return matchesSearch;
     if (statusFilter === "open") return matchesSearch && isOpen;
@@ -83,10 +86,13 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
             {filteredTickets.length > 0 ? (
               filteredTickets.map((ticket) => {
                 const status = getTicketStatus(
-                  ticket.properties.hs_pipeline_stage,
+                  ticket.properties.hs_pipeline_stage ?? "",
                   ticket.properties.hs_pipeline,
                 );
                 const displayLabel = getTicketDisplayLabel(ticket.properties);
+                const createdAt = ticket.properties.createdate
+                  ? format(new Date(ticket.properties.createdate), "dd MMM yyyy", { locale: es })
+                  : "--";
                 
                 return (
                   <TableRow key={ticket.id} className="group hover:bg-muted/30 transition-colors cursor-pointer border-b last:border-0">
@@ -113,7 +119,7 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
                     </TableCell>
                     <TableCell className="text-right px-6">
                        <span className="text-[11px] font-bold text-muted-foreground/80 uppercase tracking-tighter">
-                          {format(new Date(ticket.properties.createdate), "dd MMM yyyy", { locale: es })}
+                          {createdAt}
                        </span>
                     </TableCell>
                   </TableRow>
