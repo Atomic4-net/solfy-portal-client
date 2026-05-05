@@ -29,7 +29,7 @@ const TRAMITES_STAGE_GROUP: Record<string, TicketStatusGroup> = {
   "526496209": "proceso",
   "526496211": "gestion",
   "574603757": "gestion",
-  "526496212": "gestion",
+  "526496212": "cerrado",
   "526223047": "cerrado",
 };
 
