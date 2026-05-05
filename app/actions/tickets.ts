@@ -3,17 +3,12 @@
 import { createTicket as hubspotCreateTicket, uploadFile as hubspotUploadFile } from "@/lib/hubspot";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { ensureUserProfile } from "@/lib/user-profile";
 
 export async function createTicketAction(formData: FormData) {
   const subject = formData.get("subject") as string;
   const content = formData.get("content") as string;
   const dealId = formData.get("dealId") as string | undefined;
-  
-  // Collect HubSpot specific properties from user fields
-  const tipologia = formData.get("TICKET.tipologia_incidencia") as string;
-  const subcatSolar = formData.get("TICKET.sub_categorias_incidencias") as string;
-  const subcatAero = formData.get("TICKET.sub_categorias_incidencias___aerotermia") as string;
-  const subcatCargador = formData.get("TICKET.sub_categoria_incidencia___cargador_coche_electrico") as string;
 
   // Collect files
   const files = formData.getAll("attachments") as File[];
@@ -26,12 +21,8 @@ export async function createTicketAction(formData: FormData) {
     return { error: "Usuario no autenticado" };
   }
 
-  // 2. Get HubSpot Contact ID from profile
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('hubspot_contact_id')
-    .eq('id', user.id)
-    .single();
+  // 2. Ensure profile exists and has HubSpot contact
+  const profile = await ensureUserProfile(user);
 
   if (!profile?.hubspot_contact_id) {
     return { error: "Contacto de HubSpot no encontrado" };

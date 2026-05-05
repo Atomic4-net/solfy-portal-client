@@ -1,11 +1,11 @@
 import { getContactDeals, WON_STAGES } from "@/lib/hubspot";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Building2, ChevronRight, FileText } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ensureUserProfile } from "@/lib/user-profile";
 
 export default async function ProjectsPage() {
   const supabase = await createClient();
@@ -16,20 +16,16 @@ export default async function ProjectsPage() {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('hubspot_contact_id')
-    .eq('id', user.id)
-    .single();
+  const profile = await ensureUserProfile(user);
 
   if (!profile?.hubspot_contact_id) {
-     // If no profile yet, we might need to fetch it or redirect
      return <div className="p-8">No se ha encontrado perfil de HubSpot. Contacta con soporte.</div>;
   }
 
   // 2. Fetch Deals from HubSpot
-  const deals = await getContactDeals(profile.hubspot_contact_id);
-  const activeDeals = deals.filter((deal: any) => WON_STAGES.includes(deal.properties.dealstage));
+  type Deal = { id: string; properties: { dealname: string; dealstage: string; amount?: string } };
+  const deals = (await getContactDeals(profile.hubspot_contact_id)) as Deal[];
+  const activeDeals = deals.filter((deal) => WON_STAGES.includes(deal.properties.dealstage));
 
   return (
     <div className="flex-1 w-full flex flex-col gap-8 p-4 md:p-8">
@@ -42,7 +38,7 @@ export default async function ProjectsPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {activeDeals.length > 0 ? (
-          activeDeals.map((deal: any) => (
+          activeDeals.map((deal) => (
             <Card key={deal.id} className="hover:border-primary transition-all group overflow-hidden border-2">
               <CardHeader className="pb-4 bg-muted/30">
                 <div className="flex justify-between items-start">

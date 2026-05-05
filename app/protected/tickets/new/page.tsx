@@ -4,9 +4,9 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getDeal, getContactDeals, WON_STAGES } from "@/lib/hubspot";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { ensureUserProfile } from "@/lib/user-profile";
 
 export default async function NewTicketPage({
   searchParams,
@@ -20,19 +20,16 @@ export default async function NewTicketPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('full_name, hubspot_contact_id')
-    .eq('id', user.id)
-    .single();
+  const profile = await ensureUserProfile(user);
 
   // 2. Get Deal info if dealId exists, and all available projects
   let codigoExpediente = "";
-  let availableProjects: any[] = [];
+  type Project = { id: string; properties: { dealname: string; dealstage: string } };
+  let availableProjects: Project[] = [];
   
   if (profile?.hubspot_contact_id) {
-    const deals = await getContactDeals(profile.hubspot_contact_id);
-    availableProjects = deals.filter((d: any) => WON_STAGES.includes(d.properties.dealstage));
+    const deals = (await getContactDeals(profile.hubspot_contact_id)) as Project[];
+    availableProjects = deals.filter((d) => WON_STAGES.includes(d.properties.dealstage));
   }
 
   if (dealId) {
@@ -63,16 +60,16 @@ export default async function NewTicketPage({
   const currentHeading = headings[category as keyof typeof headings] || headings.default;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-3 px-3 md:py-4 md:px-4">
       {category && (
-        <Link href={dealId ? `?dealId=${dealId}` : "/protected/tickets/new"} className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary mb-6 transition-colors">
+        <Link href={dealId ? `?dealId=${dealId}` : "/protected/tickets/new"} className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary mb-3 transition-colors">
           <ChevronLeft className="h-4 w-4" /> Volver a la selección
         </Link>
       )}
 
-      <div className="mb-10">
-        <h1 className="text-4xl font-black tracking-tighter font-jakarta">{currentHeading.title}</h1>
-        <p className="text-muted-foreground mt-2 font-medium">
+      <div className="mb-4">
+        <h1 className="text-3xl md:text-4xl font-black tracking-tighter font-jakarta">{currentHeading.title}</h1>
+        <p className="text-muted-foreground mt-1 font-medium">
           {currentHeading.subtitle}
         </p>
       </div>

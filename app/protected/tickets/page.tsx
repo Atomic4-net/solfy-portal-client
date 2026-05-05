@@ -5,6 +5,7 @@ import { PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { TicketList } from "@/components/ticket-list";
 import { ProjectFilter } from "@/components/project-filter";
+import { ensureUserProfile } from "@/lib/user-profile";
 
 export default async function TicketsPage({
   searchParams,
@@ -17,12 +18,7 @@ export default async function TicketsPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('hubspot_contact_id')
-    .eq('id', user.id)
-    .single();
-  
+  const profile = await ensureUserProfile(user);
   const contactId = profile?.hubspot_contact_id;
 
   // 1. Fetch data based on filter

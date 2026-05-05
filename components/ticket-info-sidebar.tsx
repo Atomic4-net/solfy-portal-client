@@ -2,16 +2,17 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Tag, AlertCircle, Briefcase, Info, Clock, Activity } from "lucide-react";
+import { Calendar, Tag, Briefcase, Info, Activity } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { getTicketStatus } from "@/lib/ticket-utils";
+import { getTicketStatus, PIPELINE_INCIDENCIAS, PIPELINE_TRAMITES } from "@/lib/ticket-utils";
 
 interface TicketInfoSidebarProps {
   ticket: {
     subject: string;
     priority: string;
     category: string;
+    pipeline: string;
     status: string;
     createdate: string;
   };
@@ -22,8 +23,30 @@ interface TicketInfoSidebarProps {
 }
 
 export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
-  const isHighPriority = ticket.priority === "HIGH" || ticket.priority === "ALTA";
-  const statusInfo = getTicketStatus(ticket.status);
+  const statusInfo = getTicketStatus(ticket.status, ticket.pipeline);
+  const incidenciasStages = new Set([
+    "145196488",
+    "145196489",
+    "145196490",
+    "145196491",
+    "4805863630",
+    "4805863631",
+    "4806738116",
+    "4839585989",
+    "4840816828",
+    "5004294350",
+    "145196535",
+    "145196536",
+    "621478868",
+  ]);
+  const requestType =
+    ticket.pipeline === PIPELINE_INCIDENCIAS
+      ? "Incidencias"
+      : ticket.pipeline === PIPELINE_TRAMITES
+        ? "Trámites/Solicitudes"
+        : incidenciasStages.has(ticket.status)
+          ? "Incidencias"
+          : "Trámites/Solicitudes";
 
   return (
     <div className="space-y-6 flex flex-col h-full overflow-y-auto pr-1 pb-8 custom-scrollbar">
@@ -31,11 +54,18 @@ export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
       <Card className="border-0 shadow-none bg-transparent">
         <CardHeader className="px-0 pt-0">
           <CardTitle className="text-sm font-black uppercase tracking-widest text-muted-foreground/80">
-            Detalles de la Solicitud
+            Detalles del ticket
           </CardTitle>
         </CardHeader>
         <CardContent className="px-0 space-y-6">
           <div className="space-y-4">
+            <div className="space-y-1.5">
+               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Tag className="h-3 w-3" /> Tipo de solicitud
+               </span>
+               <p className="text-sm font-bold text-foreground/90 pl-1">{requestType}</p>
+            </div>
+
             <div className="space-y-1.5">
                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <Activity className="h-3 w-3" /> Estado Actual

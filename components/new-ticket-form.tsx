@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { createTicketAction } from "@/app/actions/tickets";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,7 +58,7 @@ interface NewTicketFormProps {
   defaultEmail?: string;
   defaultExpediente?: string;
   formCategory?: "asistencia" | "documentacion";
-  availableProjects?: any[];
+  availableProjects?: { id: string; properties: { dealname: string } }[];
 }
 
 export function NewTicketForm({ 
@@ -151,30 +150,30 @@ export function NewTicketForm({
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <Card className="border-2 shadow-2xl shadow-primary/5 rounded-3xl overflow-hidden">
-        <CardContent className="p-8 md:p-12">
-          <div className="mb-10">
+    <div className="w-full max-w-3xl mx-auto">
+      <Card className="border-2 shadow-lg shadow-primary/5 rounded-2xl overflow-hidden">
+        <CardContent className="p-5 md:p-6">
+          <div className="mb-4">
             <h1 className="text-3xl font-black tracking-tighter font-jakarta">
               {formCategory === "asistencia" ? "Reportar incidencia" : "Solicitud de documentación"}<span className="text-primary">.</span>
             </h1>
-            <p className="text-muted-foreground mt-2 font-medium">
+            <p className="text-muted-foreground mt-1 font-medium">
               {formCategory === "asistencia" 
                 ? "Completa los detalles técnicos del problema." 
                 : "Indícanos qué documentación necesitas gestionar."}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Project Selection (only if not pre-selected) */}
-            <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest opacity-70">Asociar a un Proyecto</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-black uppercase tracking-widest opacity-70">Asociar a un Proyecto *</Label>
               <Select 
                 value={selectedDealId}
                 onValueChange={setSelectedDealId}
                 required
               >
-                <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary">
+                <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary">
                   <SelectValue placeholder="Selecciona el proyecto" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -189,9 +188,9 @@ export function NewTicketForm({
 
             {/* Categorization Section */}
             {formCategory === "asistencia" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipo de instalación</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipo de instalación *</Label>
                   <Select 
                     name="TICKET.tipologia_incidencia" 
                     value={installationType}
@@ -201,7 +200,7 @@ export function NewTicketForm({
                     }}
                     required
                   >
-                    <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary">
+                    <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary">
                       <SelectValue placeholder="Selecciona el sistema" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -212,8 +211,8 @@ export function NewTicketForm({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de la incidencia</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de la incidencia *</Label>
                   <Select 
                     name={installationType === "Sistema Fotovoltaico" ? "TICKET.sub_categorias_incidencias" : 
                           installationType === "Sistema de Aerotermia" ? "TICKET.sub_categorias_incidencias___aerotermia" : 
@@ -223,7 +222,7 @@ export function NewTicketForm({
                     disabled={!installationType}
                     required
                   >
-                    <SelectTrigger className={cn("rounded-xl border-2 h-12 focus:ring-primary", !installationType && "opacity-50")}>
+                    <SelectTrigger className={cn("rounded-xl border-2 h-11 focus:ring-primary", !installationType && "opacity-50")}>
                       <SelectValue placeholder={installationType ? "Selecciona..." : "Primero elige sistema"} />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl max-h-[300px]">
@@ -235,14 +234,14 @@ export function NewTicketForm({
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de consulta</Label>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de consulta *</Label>
                 <Select 
                   value={docCategory}
                   onValueChange={setDocCategory}
                   required
                 >
-                  <SelectTrigger className="rounded-xl border-2 h-12 focus:ring-primary w-full">
+                  <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary w-full">
                     <SelectValue placeholder="Indícanos la tipología de consulta" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
@@ -254,9 +253,9 @@ export function NewTicketForm({
               </div>
             )}
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="content" className="text-xs font-black uppercase tracking-widest opacity-70">
-                {formCategory === "asistencia" ? "Explícanos tu incidencia" : "Descripción"}
+                {formCategory === "asistencia" ? "Explícanos tu incidencia *" : "Descripción *"}
               </Label>
               <Textarea
                 id="content"
@@ -264,16 +263,16 @@ export function NewTicketForm({
                 placeholder={formCategory === "asistencia" 
                   ? "Describe qué sucede con el mayor detalle posible..."
                   : "Explícanos los detalles de tu consulta"}
-                className="min-h-[150px] rounded-2xl border-2 focus-visible:ring-primary p-4"
+                className="min-h-[120px] rounded-xl border-2 focus-visible:ring-primary p-3"
                 required
               />
             </div>
 
             {/* File Upload Section */}
-            <div className="space-y-4">
-              <Label className="text-xs font-black uppercase tracking-widest opacity-70">Documentación / Imágenes</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-black uppercase tracking-widest opacity-70">Documentación / Imágenes (opcional)</Label>
               <div 
-                className="border-2 border-dashed border-muted-foreground/20 rounded-2xl p-8 text-center hover:border-primary/50 transition-colors cursor-pointer group"
+                className="border-2 border-dashed border-muted-foreground/20 rounded-xl p-4 text-center hover:border-primary/50 transition-colors cursor-pointer group"
                 onClick={() => document.getElementById('file-upload')?.click()}
               >
                 <input 
@@ -283,15 +282,15 @@ export function NewTicketForm({
                   multiple 
                   onChange={handleFileChange}
                 />
-                <UploadCloud className="mx-auto size-10 text-muted-foreground group-hover:text-primary transition-colors mb-2" />
+                <UploadCloud className="mx-auto size-7 text-muted-foreground group-hover:text-primary transition-colors mb-1" />
                 <p className="text-sm font-bold">Haz clic o arrastra archivos para subirlos</p>
-                <p className="text-xs text-muted-foreground mt-1">Imágenes o PDF (máx. 10MB por archivo)</p>
+                <p className="text-xs text-muted-foreground">Imágenes o PDF (máx. 10MB por archivo)</p>
               </div>
 
               {files.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                   {files.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-xl border group">
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border group">
                       <div className="flex items-center gap-3 overflow-hidden">
                         <Paperclip className="size-4 text-primary shrink-0" />
                         <span className="text-xs font-medium truncate">{file.name}</span>
@@ -310,7 +309,7 @@ export function NewTicketForm({
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl text-destructive text-sm font-bold">
+              <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm font-bold">
                 <AlertCircle className="size-5 shrink-0" />
                 <p>{error}</p>
               </div>
@@ -318,11 +317,11 @@ export function NewTicketForm({
 
 
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-6">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Button
                 type="button"
                 variant="ghost"
-                className="flex-1 h-14 rounded-2xl font-black text-muted-foreground"
+                className="flex-1 h-11 rounded-xl font-black text-muted-foreground"
                 onClick={() => router.back()}
                 disabled={isLoading}
               >
@@ -330,7 +329,7 @@ export function NewTicketForm({
               </Button>
               <Button 
                 type="submit" 
-                className="flex-1 h-14 rounded-2xl font-black text-lg shadow-xl shadow-primary/20"
+                className="flex-1 h-11 rounded-xl font-black text-base shadow-lg shadow-primary/20"
                 disabled={isLoading}
               >
                 {isLoading ? (
