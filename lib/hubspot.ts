@@ -145,7 +145,6 @@ export async function createTicket(
         content,
         hs_pipeline: '0', // Default pipeline
         hs_pipeline_stage: '3', // Default "New" stage for tickets
-        hs_attachment_ids: attachmentIds.length > 0 ? attachmentIds.join(';') : undefined,
         ...properties
       }
     })
@@ -185,7 +184,48 @@ export async function createTicket(
     console.error("DEBUG: Failed to create initial email message, but ticket was created:", emailError);
   }
 
+  // 5. Attach uploaded files to ticket through NOTE engagement associations
+  if (attachmentIds.length > 0) {
+    try {
+      await createTicketAttachmentEngagement(ticket.id, attachmentIds, "");
+    } catch (attachError) {
+      console.error("DEBUG: Failed to associate attachments to ticket:", attachError);
+    }
+  }
+
   return ticket;
+}
+
+async function createTicketAttachmentEngagement(
+  ticketId: string,
+  attachmentIds: string[],
+  body: string,
+) {
+  if (attachmentIds.length === 0) return null;
+
+  const payload = {
+    engagement: {
+      active: true,
+      type: "NOTE",
+      timestamp: Date.now(),
+    },
+    associations: {
+      contactIds: [],
+      companyIds: [],
+      dealIds: [],
+      ownerIds: [],
+      ticketIds: [Number(ticketId)],
+    },
+    attachments: attachmentIds.map((id) => ({ id: Number(id) })),
+    metadata: {
+      body,
+    },
+  };
+
+  return hubspotRequest(`/engagements/v1/engagements`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 /**
@@ -379,7 +419,6 @@ export async function sendTicketMessage(ticketId: string, message: string, attac
           hs_email_text: message || "Archivo adjunto desde el portal",
           hs_email_html: message ? `<div>${message}</div>` : "<div>Archivo adjunto desde el portal</div>",
           hs_timestamp: new Date().toISOString(),
-          hs_attachment_ids: attachmentIds.length > 0 ? attachmentIds.join(';') : undefined,
         }
       })
     });
@@ -389,6 +428,10 @@ export async function sendTicketMessage(ticketId: string, message: string, attac
     await hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/default/email/${email.id}`, {
       method: "PUT"
     });
+
+    if (attachmentIds.length > 0) {
+      await createTicketAttachmentEngagement(ticketId, attachmentIds, message || "");
+    }
 
     return email;
   } catch (error) {
