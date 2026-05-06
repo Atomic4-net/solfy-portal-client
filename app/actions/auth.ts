@@ -16,7 +16,7 @@ export async function signUpAction(formData: FormData) {
     const contact = await getContactByEmail(email);
     if (!contact) {
       console.log(`DEBUG: Contact NOT found in HubSpot for email: ${email}`);
-      return { error: "Este correo no está asociado a ningún cliente de Solfy. Por favor, contacta con nosotros." };
+      return { error: "Este correo electrónico no está asociado a ningún proyecto con Solfy. Revisa que el correo escrito es correcto." };
     }
     console.log(`DEBUG: Contact found in HubSpot: ID ${contact.id}`);
 
@@ -34,7 +34,7 @@ export async function signUpAction(formData: FormData) {
     if (!hasWonDeal) {
       console.log(`DEBUG: No 'Won' deals found for contact ${contact.id}. Stages checked:`, deals.map((d: any) => d.properties?.dealstage));
       return { 
-        error: "Para registrarte, tu proyecto debe estar en estado 'Ganado - Finalizado'. Por favor, contacta con tu asesor." 
+        error: "Este correo electrónico no está asociado a ningún proyecto con Solfy. Revisa que el correo escrito es correcto." 
       };
     }
 

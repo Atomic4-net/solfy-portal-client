@@ -2,11 +2,11 @@ import { NewTicketForm } from "@/components/new-ticket-form";
 import { ServiceSelection } from "@/components/service-selection";
 import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
-import { getDeal } from "@/lib/hubspot";
+import { getDeal, getContactDeals, WON_STAGES } from "@/lib/hubspot";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { ensureUserProfile } from "@/lib/user-profile";
 
 export default async function NewTicketPage({
   searchParams,
@@ -20,14 +20,18 @@ export default async function NewTicketPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('full_name')
-    .eq('id', user.id)
-    .single();
+  const profile = await ensureUserProfile(user);
 
-  // 2. Get Deal info if dealId exists
+  // 2. Get Deal info if dealId exists, and all available projects
   let codigoExpediente = "";
+  type Project = { id: string; properties: { dealname: string; dealstage: string } };
+  let availableProjects: Project[] = [];
+  
+  if (profile?.hubspot_contact_id) {
+    const deals = (await getContactDeals(profile.hubspot_contact_id)) as Project[];
+    availableProjects = deals.filter((d) => WON_STAGES.includes(d.properties.dealstage));
+  }
+
   if (dealId) {
     try {
       const deal = await getDeal(dealId);
@@ -56,16 +60,16 @@ export default async function NewTicketPage({
   const currentHeading = headings[category as keyof typeof headings] || headings.default;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-3 px-3 md:py-4 md:px-4">
       {category && (
-        <Link href={dealId ? `?dealId=${dealId}` : "/protected/tickets/new"} className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary mb-6 transition-colors">
+        <Link href={dealId ? `?dealId=${dealId}` : "/protected/tickets/new"} className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary mb-3 transition-colors">
           <ChevronLeft className="h-4 w-4" /> Volver a la selección
         </Link>
       )}
 
-      <div className="mb-10">
-        <h1 className="text-4xl font-black tracking-tighter font-jakarta">{currentHeading.title}</h1>
-        <p className="text-muted-foreground mt-2 font-medium">
+      <div className="mb-4">
+        <h1 className="text-3xl md:text-4xl font-black tracking-tighter font-jakarta">{currentHeading.title}</h1>
+        <p className="text-muted-foreground mt-1 font-medium">
           {currentHeading.subtitle}
         </p>
       </div>
@@ -78,24 +82,20 @@ export default async function NewTicketPage({
               defaultName={profile?.full_name || ""}
               defaultEmail={user.email || ""}
               defaultExpediente={codigoExpediente}
+              availableProjects={availableProjects}
            />
          )}
 
          {category === "documentacion" && (
-           <div className="bg-card border-2 border-dashed rounded-[2rem] p-20 text-center space-y-4">
-              <div className="h-20 w-20 bg-blue-500/10 text-blue-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <FileSearch className="h-10 w-10" />
-              </div>
-              <h2 className="text-2xl font-black font-jakarta tracking-tight">Formulario de Documentación</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto font-medium">
-                Estamos terminando de preparar este formulario. Envíanos un correo a soporte mientras tanto.
-              </p>
-           </div>
+           <NewTicketForm 
+              defaultName={profile?.full_name || ""}
+              defaultEmail={user.email || ""}
+              defaultExpediente={codigoExpediente}
+              formCategory="documentacion"
+              availableProjects={availableProjects}
+           />
          )}
       </Suspense>
     </div>
   );
 }
-
-// Add fake FileSearch for the placeholder if it's not imported globally
-import { FileSearch } from "lucide-react";

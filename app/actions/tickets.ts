@@ -3,17 +3,12 @@
 import { createTicket as hubspotCreateTicket, uploadFile as hubspotUploadFile } from "@/lib/hubspot";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { ensureUserProfile } from "@/lib/user-profile";
 
 export async function createTicketAction(formData: FormData) {
   const subject = formData.get("subject") as string;
   const content = formData.get("content") as string;
   const dealId = formData.get("dealId") as string | undefined;
-  
-  // Collect HubSpot specific properties from user fields
-  const tipologia = formData.get("TICKET.tipologia_incidencia") as string;
-  const subcatSolar = formData.get("TICKET.sub_categorias_incidencias") as string;
-  const subcatAero = formData.get("TICKET.sub_categorias_incidencias___aerotermia") as string;
-  const subcatCargador = formData.get("TICKET.sub_categoria_incidencia___cargador_coche_electrico") as string;
 
   // Collect files
   const files = formData.getAll("attachments") as File[];
@@ -26,12 +21,8 @@ export async function createTicketAction(formData: FormData) {
     return { error: "Usuario no autenticado" };
   }
 
-  // 2. Get HubSpot Contact ID from profile
-  const { data: profile } = await supabase
-    .from('user_profiles')
-    .select('hubspot_contact_id')
-    .eq('id', user.id)
-    .single();
+  // 2. Ensure profile exists and has HubSpot contact
+  const profile = await ensureUserProfile(user);
 
   if (!profile?.hubspot_contact_id) {
     return { error: "Contacto de HubSpot no encontrado" };
@@ -64,10 +55,22 @@ export async function createTicketAction(formData: FormData) {
 
     // 5. Prepare extra properties for HubSpot
     const extraProperties: Record<string, string> = {};
-    if (tipologia) extraProperties["TICKET.tipologia_incidencia"] = tipologia;
-    if (subcatSolar) extraProperties["TICKET.sub_categorias_incidencias"] = subcatSolar;
-    if (subcatAero) extraProperties["TICKET.sub_categorias_incidencias___aerotermia"] = subcatAero;
-    if (subcatCargador) extraProperties["TICKET.sub_categoria_incidencia___cargador_coche_electrico"] = subcatCargador;
+    
+    // Set category based on form type (using valid HubSpot internal keys)
+    const formCategory = formData.get("formCategory");
+    if (formCategory === "documentacion") {
+      extraProperties["hs_ticket_category"] = "GENERAL_INQUIRY";
+    } else {
+      extraProperties["hs_ticket_category"] = "PRODUCT_ISSUE";
+    }
+
+    // Dynamically collect all TICKET. properties and strip the prefix
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith("TICKET.")) {
+        const cleanKey = key.replace("TICKET.", "").toLowerCase();
+        extraProperties[cleanKey] = value as string;
+      }
+    }
 
     // 6. Create ticket in HubSpot
     const hsTicket = await hubspotCreateTicket(profile.hubspot_contact_id, {

@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/select";
 import { Building2 } from "lucide-react";
 
+import { WON_STAGES } from "@/lib/hubspot";
+
 interface ProjectFilterProps {
   projects: any[];
   currentDealId?: string;
@@ -18,6 +20,11 @@ interface ProjectFilterProps {
 export function ProjectFilter({ projects, currentDealId }: ProjectFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Filter projects to only show WON ones
+  const wonProjects = projects.filter(project => 
+    project.properties.dealstage && WON_STAGES.includes(project.properties.dealstage)
+  );
 
   const handleValueChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -41,7 +48,7 @@ export function ProjectFilter({ projects, currentDealId }: ProjectFilterProps) {
         </SelectTrigger>
         <SelectContent className="rounded-xl border-2 shadow-xl">
           <SelectItem value="all" className="font-bold py-3">Todos los proyectos</SelectItem>
-          {projects.map((project) => (
+          {wonProjects.map((project) => (
             <SelectItem key={project.id} value={project.id} className="font-medium">
               {project.properties.dealname}
             </SelectItem>
