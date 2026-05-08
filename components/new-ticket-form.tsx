@@ -112,6 +112,24 @@ export function NewTicketForm({
     setIsLoading(true);
     setError(null);
 
+    if (!selectedDealId) {
+      setError("Debes seleccionar un proyecto.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formCategory === "asistencia" && (!installationType || !subCategory)) {
+      setError("Completa tipo de instalación y tipología de incidencia.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (formCategory === "documentacion" && !docCategory) {
+      setError("Debes seleccionar la tipología de consulta.");
+      setIsLoading(false);
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     formData.append("formCategory", formCategory);
 
@@ -151,19 +169,8 @@ export function NewTicketForm({
 
   return (
     <div className="w-full max-w-3xl mx-auto">
-      <Card className="border-2 shadow-lg shadow-primary/5 rounded-2xl overflow-hidden">
-        <CardContent className="p-5 md:p-6">
-          <div className="mb-4">
-            <h1 className="text-3xl font-black tracking-tighter font-jakarta">
-              {formCategory === "asistencia" ? "Reportar incidencia" : "Solicitud de documentación"}<span className="text-primary">.</span>
-            </h1>
-            <p className="text-muted-foreground mt-1 font-medium">
-              {formCategory === "asistencia" 
-                ? "Completa los detalles técnicos del problema." 
-                : "Indícanos qué documentación necesitas gestionar."}
-            </p>
-          </div>
-
+      <Card className="border-0 shadow-none rounded-none bg-transparent overflow-visible">
+        <CardContent className="p-0">
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Project Selection (only if not pre-selected) */}
             <div className="space-y-1.5">
@@ -173,10 +180,10 @@ export function NewTicketForm({
                 onValueChange={setSelectedDealId}
                 required
               >
-                <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary">
-                  <SelectValue placeholder="Selecciona el proyecto" />
+                <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary w-full min-w-0">
+                  <SelectValue placeholder="Selecciona el proyecto" className="truncate" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl">
+                <SelectContent className="rounded-xl w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                   {availableProjects.map(project => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.properties.dealname}
@@ -200,10 +207,10 @@ export function NewTicketForm({
                     }}
                     required
                   >
-                    <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary">
-                      <SelectValue placeholder="Selecciona el sistema" />
+                    <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary w-full min-w-0">
+                      <SelectValue placeholder="Selecciona el sistema" className="truncate" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-xl w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                       {Object.keys(INCIDENT_CATEGORIES).map(type => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
@@ -222,10 +229,10 @@ export function NewTicketForm({
                     disabled={!installationType}
                     required
                   >
-                    <SelectTrigger className={cn("rounded-xl border-2 h-11 focus:ring-primary", !installationType && "opacity-50")}>
-                      <SelectValue placeholder={installationType ? "Selecciona..." : "Primero elige sistema"} />
+                    <SelectTrigger className={cn("rounded-xl border-2 h-11 focus:ring-primary w-full min-w-0", !installationType && "opacity-50")}>
+                      <SelectValue placeholder={installationType ? "Selecciona..." : "Primero elige sistema"} className="truncate" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl max-h-[300px]">
+                    <SelectContent className="rounded-xl max-h-[300px] w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                       {currentSubCategories.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
@@ -241,10 +248,10 @@ export function NewTicketForm({
                   onValueChange={setDocCategory}
                   required
                 >
-                  <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary w-full">
-                    <SelectValue placeholder="Indícanos la tipología de consulta" />
+                  <SelectTrigger className="rounded-xl border-2 h-11 focus:ring-primary w-full min-w-0">
+                    <SelectValue placeholder="Indícanos la tipología de consulta" className="truncate" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
+                  <SelectContent className="rounded-xl w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                     {DOCUMENTATION_CATEGORIES.map(cat => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}

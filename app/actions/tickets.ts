@@ -56,12 +56,16 @@ export async function createTicketAction(formData: FormData) {
     // 5. Prepare extra properties for HubSpot
     const extraProperties: Record<string, string> = {};
     
-    // Set category based on form type (using valid HubSpot internal keys)
+    // Set category and pipeline based on form type
     const formCategory = formData.get("formCategory");
     if (formCategory === "documentacion") {
       extraProperties["hs_ticket_category"] = "GENERAL_INQUIRY";
+      extraProperties["hs_pipeline"] = "333821424";
+      extraProperties["hs_pipeline_stage"] = "526496209";
     } else {
       extraProperties["hs_ticket_category"] = "PRODUCT_ISSUE";
+      extraProperties["hs_pipeline"] = "58861555";
+      extraProperties["hs_pipeline_stage"] = "145196488";
     }
 
     // Dynamically collect all TICKET. properties and strip the prefix
