@@ -22,16 +22,17 @@ export default async function ProtectedLayout({
     <TooltipProvider>
       <SidebarProvider>
         <AppSidebar />
-        <main className="flex-1 overflow-y-auto w-full">
-          <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 border-b sticky top-0 bg-background/95 backdrop-blur z-20">
+        <main className="flex-1 w-full h-screen overflow-hidden flex flex-col">
+          <header className="flex h-16 shrink-0 items-center justify-between gap-2 px-4 border-b bg-background/95 backdrop-blur z-20">
             <div className="flex items-center gap-2">
               <SidebarTrigger className="-ml-1" />
             </div>
             <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-muted-foreground">Hola, {user.email}.</span>
               <ThemeSwitcher />
             </div>
           </header>
-          <div className="p-8">
+          <div className="flex-1 overflow-y-auto p-8">
             {children}
           </div>
         </main>

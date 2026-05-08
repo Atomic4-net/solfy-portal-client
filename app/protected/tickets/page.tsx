@@ -35,11 +35,6 @@ export default async function TicketsPage({
         <div className="flex flex-col gap-6">
           <div>
             <h1 className="text-3xl font-black tracking-tighter">Mis Tickets</h1>
-            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground font-medium uppercase tracking-widest text-[10px]">
-               <span>Tickets</span>
-               <div className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-               <span>Histórico de consultas</span>
-            </div>
           </div>
           
           <ProjectFilter projects={projects} currentDealId={dealId} />

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Tag, Calendar } from "lucide-react";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
+import { getTicketDisplayLabel } from "@/lib/ticket-utils";
 
 export default async function ProjectDetailPage({
   params,
@@ -33,7 +34,7 @@ export default async function ProjectDetailPage({
     : dealName.includes("cargador") || dealName.includes("carregador")
     ? "Cargador de coche Eléctrico"
     : "Sistema Fotovoltaico";
-  type DealTicket = { id: string; properties: { subject?: string } };
+  type DealTicket = { id: string; properties: Record<string, string | undefined> };
   const projectTickets = tickets as DealTicket[];
 
   return (
@@ -75,7 +76,7 @@ export default async function ProjectDetailPage({
           <Card className="md:col-span-3 border-2">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/10">
                 <div>
-                   <CardTitle className="text-xl font-bold">Tickets de {deal.properties.dealname}</CardTitle>
+                   <CardTitle className="text-xl font-bold">Mis tickets</CardTitle>
                 </div>
                 <span className="text-xs font-mono text-muted-foreground">{projectTickets.length}</span>
             </CardHeader>
@@ -86,7 +87,10 @@ export default async function ProjectDetailPage({
                      <Link key={ticket.id} href={`/protected/tickets/${ticket.id}`} className="block p-6 hover:bg-muted/50 transition-colors group">
                         <div className="flex justify-between items-start">
                             <div className="space-y-1">
-                                <h4 className="text-lg font-bold group-hover:text-primary transition-colors">{ticket.properties.subject}</h4>
+                                <span className="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
+                                <h4 className="text-lg font-bold group-hover:text-primary transition-colors">
+                                  {getTicketDisplayLabel(ticket.properties)}
+                                </h4>
                             </div>
                         </div>
                      </Link>

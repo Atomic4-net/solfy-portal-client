@@ -98,7 +98,7 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
                   <TableRow key={ticket.id} className="group hover:bg-muted/30 transition-colors cursor-pointer border-b last:border-0">
                     <TableCell className="px-6 py-5">
                       <Link href={`/protected/tickets/${ticket.id}`} className="block">
-                        <span className="font-mono font-black text-xs text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                        <span className="font-mono font-medium text-xs text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                           #{ticket.id}
                         </span>
                       </Link>
