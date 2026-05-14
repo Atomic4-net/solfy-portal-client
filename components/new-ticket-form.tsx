@@ -149,9 +149,9 @@ export function NewTicketForm({
     // Subject calculation
     let subject = "";
     if (formCategory === "asistencia") {
-      subject = `Incidencia ${installationType}: ${subCategory}`;
+      subject = `${installationType}: ${subCategory}`;
     } else {
-      subject = `Documentación: ${docCategory}`;
+      subject = `${docCategory}`;
       // Also pass the doc category to the form data so the server action can process it if needed
       formData.append("TICKET.tipologia_tramites", docCategory);
     }
@@ -197,7 +197,7 @@ export function NewTicketForm({
             {formCategory === "asistencia" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipo de instalación *</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipologia incidencia *</Label>
                   <Select 
                     name="TICKET.tipologia_incidencia" 
                     value={installationType}
@@ -219,7 +219,7 @@ export function NewTicketForm({
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de la incidencia *</Label>
+                  <Label className="text-xs font-black uppercase tracking-widest opacity-70">Sub categoría *</Label>
                   <Select 
                     name={installationType === "Sistema Fotovoltaico" ? "TICKET.sub_categorias_incidencias" : 
                           installationType === "Sistema de Aerotermia" ? "TICKET.sub_categorias_incidencias___aerotermia" : 
@@ -242,7 +242,7 @@ export function NewTicketForm({
               </div>
             ) : (
               <div className="space-y-1.5">
-                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipología de consulta *</Label>
+                <Label className="text-xs font-black uppercase tracking-widest opacity-70">Tipologia tramites *</Label>
                 <Select 
                   value={docCategory}
                   onValueChange={setDocCategory}

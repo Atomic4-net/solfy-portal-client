@@ -61,12 +61,15 @@ export function isTicketOpen(stageId: string, pipelineId?: string): boolean {
 export function getTicketDisplayLabel(properties: Record<string, string | undefined>) {
   const pipeline = properties.hs_pipeline;
   const tipologiaIncidencia = properties.tipologia_incidencia?.trim();
-  const tipologia = properties.tipologia?.trim();
+  const subCategoria =
+    properties.sub_categorias_incidencias___aerotermia?.trim() ||
+    properties.sub_categorias_incidencias?.trim() ||
+    properties.sub_categoria_incidencia___cargador_coche_electrico?.trim();
   const tipologiaTramites = properties.tipologia_tramites?.trim();
   const subject = properties.subject?.trim();
 
-  if (pipeline === PIPELINE_INCIDENCIAS && tipologiaIncidencia && tipologia) {
-    return `${tipologiaIncidencia} - ${tipologia}`;
+  if (pipeline === PIPELINE_INCIDENCIAS && tipologiaIncidencia && subCategoria) {
+    return `${tipologiaIncidencia}: ${subCategoria}`;
   }
 
   if (pipeline === PIPELINE_TRAMITES && tipologiaTramites) {
@@ -74,4 +77,8 @@ export function getTicketDisplayLabel(properties: Record<string, string | undefi
   }
 
   return subject || "Sin detalle";
+}
+
+export function getTicketType(properties: Record<string, string | undefined>) {
+  return properties.hs_pipeline === PIPELINE_TRAMITES ? "Documentación" : "Incidencia";
 }

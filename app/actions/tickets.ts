@@ -80,7 +80,6 @@ export async function createTicketAction(formData: FormData) {
     const hsTicket = await hubspotCreateTicket(profile.hubspot_contact_id, {
       subject,
       content,
-      portalId: dbTicket.portal_id,
       dealId: dealId || undefined,
       properties: extraProperties,
       attachmentIds

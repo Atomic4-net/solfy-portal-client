@@ -16,7 +16,7 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { getTicketDisplayLabel, getTicketStatus, isTicketOpen } from "@/lib/ticket-utils";
+import { getTicketDisplayLabel, getTicketStatus, getTicketType, isTicketOpen } from "@/lib/ticket-utils";
 
 type HubspotTicket = {
   id: string;
@@ -76,10 +76,10 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="hover:bg-transparent border-b">
-              <TableHead className="w-[160px] font-black uppercase text-[10px] tracking-widest text-muted-foreground py-4 px-6">Ticket ID</TableHead>
-              <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Ticket</TableHead>
-              <TableHead className="w-[160px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Estado</TableHead>
-              <TableHead className="w-[180px] font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right px-6">Fecha creación</TableHead>
+              <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground py-4 px-6">Ticket</TableHead>
+              <TableHead className="w-[120px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Tipo</TableHead>
+              <TableHead className="w-[110px] font-black uppercase text-[10px] tracking-widest text-muted-foreground">Estado</TableHead>
+              <TableHead className="w-[110px] font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right px-6">Fecha</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -90,6 +90,7 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
                   ticket.properties.hs_pipeline,
                 );
                 const displayLabel = getTicketDisplayLabel(ticket.properties);
+                const ticketType = getTicketType(ticket.properties);
                 const createdAt = ticket.properties.createdate
                   ? format(new Date(ticket.properties.createdate), "dd MMM yyyy", { locale: es })
                   : "--";
@@ -97,20 +98,22 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
                 return (
                   <TableRow key={ticket.id} className="group hover:bg-muted/30 transition-colors cursor-pointer border-b last:border-0">
                     <TableCell className="px-6 py-5">
-                      <Link href={`/protected/tickets/${ticket.id}`} className="block">
-                        <span className="font-mono font-medium text-xs text-primary bg-primary/10 px-2 py-1 rounded border border-primary/20 group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                          #{ticket.id}
-                        </span>
-                      </Link>
-                    </TableCell>
-                    <TableCell>
                        <Link href={`/protected/tickets/${ticket.id}`} className="block">
                          <div className="flex flex-col">
+                            <span className="text-xs font-mono text-muted-foreground">#{ticket.id}</span>
                             <span className="font-black text-sm tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-1">
                                 {displayLabel}
                             </span>
                          </div>
                        </Link>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className="inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-foreground"
+                        style={{ backgroundColor: ticketType === "Incidencia" ? "#FAECE7" : "#E6F1FB" }}
+                      >
+                        {ticketType}
+                      </span>
                     </TableCell>
                     <TableCell>
                         <Badge variant={status.variant} className="rounded-full font-black uppercase text-[9px] px-3 py-0.5 border-2 border-transparent">
