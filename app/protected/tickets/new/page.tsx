@@ -44,7 +44,7 @@ export default async function NewTicketPage({
   // Define headings based on selection
   const headings = {
     default: {
-      title: "Nueva Solicitud",
+      title: "",
       subtitle: "Selecciona el tipo de gestión que necesitas realizar.",
     },
     asistencia: {
@@ -68,7 +68,9 @@ export default async function NewTicketPage({
       )}
 
       <div className="mb-4">
-        <h1 className="text-3xl md:text-4xl font-black tracking-tighter font-jakarta">{currentHeading.title}</h1>
+        {currentHeading.title ? (
+          <h1 className="text-3xl md:text-4xl font-black tracking-tighter font-jakarta">{currentHeading.title}</h1>
+        ) : null}
         <p className="text-muted-foreground mt-1 font-medium">
           {currentHeading.subtitle}
         </p>
