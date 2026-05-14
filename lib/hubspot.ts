@@ -273,10 +273,8 @@ export async function getTicketMessages(ticketId: string) {
   try {
     console.log(`DEBUG: Fetching messages for Ticket ID: ${ticketId}`);
 
-    // 0. Fetch the ticket itself to get the initial content/description
+    // 0. Fetch ticket metadata (without injecting ticket description as a chat message)
     const ticket = await getTicket(ticketId);
-    const initialContent = ticket.properties.content;
-    const initialDate = ticket.properties.createdate;
 
     // 1. Get only email associations.
     // Notes and communications often contain internal-only context and should not be shown to clients.
@@ -315,32 +313,6 @@ export async function getTicketMessages(ticketId: string) {
 
     // 4. Normalize messages
     const allMessages: any[] = [];
-
-    // Prepend initial message if it exists AND it's not already in emails (to avoid duplication check)
-    // We check if any email starts with the same text to be safe
-    const hasEmailWithInitialContent = emails.results.some((e: any) => 
-      (e.properties.hs_email_text || "").includes(initialContent?.substring(0, 50) || "____")
-    );
-
-    if (initialContent && !hasEmailWithInitialContent) {
-      const cleanInitial = initialContent.replace(/<[^>]*>?/gm, '').toLowerCase();
-      console.log(`DEBUG: Inspecting Initial Content -> "${cleanInitial.substring(0, 50)}..."`);
-      
-      // Check if it's an automated Solfy response
-      const isAutoReply = cleanInitial.includes("hemos recibido") || 
-                          cleanInitial.includes("ticket received") ||
-                          cleanInitial.includes("su solicitud") ||
-                          cleanInitial.includes("benvolgut client") ||
-                          cleanInitial.includes("recibido su consulta");
-
-      allMessages.push({
-        id: `initial-${ticketId}`,
-        text: initialContent.replace(/<[^>]*>?/gm, ''),
-        sender: isAutoReply ? "agent" : "user",
-        timestamp: initialDate || new Date().toISOString(),
-        type: 'initial'
-      });
-    }
 
     const strictDirectionFilter = process.env.HUBSPOT_STRICT_EMAIL_DIRECTION_FILTER === "1";
     const allowedDirections = new Set(["INCOMING_EMAIL", "OUTGOING_EMAIL", "INCOMING", "OUTGOING"]);
