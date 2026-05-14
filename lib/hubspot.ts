@@ -301,6 +301,7 @@ export async function getTicketMessages(ticketId: string) {
       "hs_email_from_email",
       "hs_email_to_email",
       "hs_email_cc_email",
+      "hs_email_headers",
     ];
 
     let emailProperties = baseEmailProperties;
@@ -338,18 +339,42 @@ export async function getTicketMessages(ticketId: string) {
     // 4. Normalize messages
     const allMessages: any[] = [];
 
-    const normalizeList = (value: string) =>
-      value
+    const extractEmails = (value: string) => {
+      if (!value) return [] as string[];
+      const lower = value.toLowerCase();
+      const matches = lower.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/g);
+      if (matches && matches.length > 0) return matches;
+      return lower
         .split(/[;,]/g)
-        .map((s) => s.trim().toLowerCase())
+        .map((s) => s.trim())
         .filter(Boolean);
+    };
+
+    const getHeaderEmails = (rawHeaders: string) => {
+      if (!rawHeaders) return { from: [] as string[], to: [] as string[] };
+      try {
+        const parsed = JSON.parse(rawHeaders);
+        return {
+          from: extractEmails(parsed?.from || parsed?.sender?.email || ""),
+          to: extractEmails(parsed?.to || parsed?.recipient || ""),
+        };
+      } catch {
+        return {
+          from: extractEmails(rawHeaders),
+          to: extractEmails(rawHeaders),
+        };
+      }
+    };
 
     const filteredEmails = emails.results.filter((e: any) => {
-      const fromList = normalizeList(e.properties?.hs_email_from_email || "");
-      const toList = normalizeList(e.properties?.hs_email_to_email || "");
-      if (!clientEmail) return false;
-      const isFromClient = fromList.some((p) => p.includes(clientEmail));
-      const isToClient = toList.some((p) => p.includes(clientEmail));
+      const fromList = extractEmails(e.properties?.hs_email_from_email || "");
+      const toList = extractEmails(e.properties?.hs_email_to_email || "");
+      const headerEmails = getHeaderEmails(e.properties?.hs_email_headers || "");
+      const allFrom = [...fromList, ...headerEmails.from];
+      const allTo = [...toList, ...headerEmails.to];
+      if (!clientEmail) return true;
+      const isFromClient = allFrom.some((p) => p === clientEmail);
+      const isToClient = allTo.some((p) => p === clientEmail);
       return isFromClient || isToClient;
     });
 
