@@ -277,52 +277,26 @@ export async function getTicketMessages(ticketId: string) {
     const initialContent = ticket.properties.content;
     const initialDate = ticket.properties.createdate;
 
-    // 1. Get associations for all message types
-    const [noteAssoc, emailAssoc, commAssoc] = await Promise.all([
-      hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/note`).catch((e) => { console.error("DEBUG: Note assoc error:", e.message); return { results: [] }; }),
-      hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/email`).catch((e) => { console.error("DEBUG: Email assoc error:", e.message); return { results: [] }; }),
-      hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/communication`).catch((e) => { console.error("DEBUG: Comm assoc error:", e.message); return { results: [] }; })
-    ]);
+    // 1. Get only email associations.
+    // Notes and communications often contain internal-only context and should not be shown to clients.
+    const emailAssoc = await hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/email`).catch((e) => {
+      console.error("DEBUG: Email assoc error:", e.message);
+      return { results: [] };
+    });
 
-    const noteIds = noteAssoc.results.map((res: any) => res.toObjectId);
     const emailIds = emailAssoc.results.map((res: any) => res.toObjectId);
-    const commIds = commAssoc.results.map((res: any) => res.toObjectId);
+    console.log(`DEBUG: Found assoc IDs - Emails: ${emailIds.length}`);
 
-    console.log(`DEBUG: Found assoc IDs - Notes: ${noteIds.length}, Emails: ${emailIds.length}, Comms: ${commIds.length}`);
-
-    // 2. Batch fetch details for each type
-    const [notes, emails, comms] = await Promise.all([
-      noteIds.length > 0 ? hubspotRequest(`/crm/v3/objects/notes/batch/read`, {
-        method: "POST",
-        body: JSON.stringify({
-          inputs: noteIds.map((id: string) => ({ id })),
-          properties: ["hs_note_body", "hubspot_owner_id", "createdate"],
-        }),
-      }).then(data => {
-        console.log("DEBUG: Notes Batch ->", data.results.map((n: any) => ({ id: n.id, owner: n.properties.hubspot_owner_id })));
-        return data;
-      }) : { results: [] },
-      emailIds.length > 0 ? hubspotRequest(`/crm/v3/objects/emails/batch/read`, {
+    // 2. Batch fetch email details
+    const emails = emailIds.length > 0
+      ? await hubspotRequest(`/crm/v3/objects/emails/batch/read`, {
         method: "POST",
         body: JSON.stringify({
           inputs: emailIds.map((id: string) => ({ id })),
           properties: ["hs_email_text", "hs_email_direction", "createdate", "hs_email_subject", "hs_email_html"],
         }),
-      }).then(data => {
-        console.log("DEBUG: Emails Batch ->", data.results.map((e: any) => ({ id: e.id, dir: e.properties.hs_email_direction, subj: e.properties.hs_email_subject })));
-        return data;
-      }) : { results: [] },
-      commIds.length > 0 ? hubspotRequest(`/crm/v3/objects/communications/batch/read`, {
-        method: "POST",
-        body: JSON.stringify({
-          inputs: commIds.map((id: string) => ({ id })),
-          properties: ["hs_communication_body", "hs_communication_logged_from", "createdate"],
-        }),
-      }).then(data => {
-        console.log("DEBUG: Comms Batch ->", data.results.map((c: any) => ({ id: c.id, from: c.properties.hs_communication_logged_from })));
-        return data;
-      }) : { results: [] },
-    ]);
+      })
+      : { results: [] };
 
     // 3. Normalize messages
     const allMessages: any[] = [];
@@ -353,38 +327,44 @@ export async function getTicketMessages(ticketId: string) {
       });
     }
 
+    const allowedDirections = new Set(["INCOMING_EMAIL", "OUTGOING_EMAIL", "INCOMING", "OUTGOING"]);
+    const filteredEmails = emails.results.filter(
+      (e: any) => allowedDirections.has((e.properties?.hs_email_direction || "").toUpperCase()),
+    );
+
+    if (process.env.DEBUG_HUBSPOT_MESSAGE_FILTER === "1") {
+      const excluded = emails.results
+        .filter((e: any) => !allowedDirections.has((e.properties?.hs_email_direction || "").toUpperCase()))
+        .map((e: any) => ({
+          id: e.id,
+          direction: e.properties?.hs_email_direction,
+          subject: e.properties?.hs_email_subject,
+        }));
+      console.log(
+        "DEBUG: Ticket message filter",
+        JSON.stringify(
+          {
+            ticketId,
+            totalEmails: emails.results.length,
+            visibleEmails: filteredEmails.length,
+            excludedEmails: excluded,
+          },
+          null,
+          2,
+        ),
+      );
+    }
+
     allMessages.push(
-      ...notes.results.map((n: any) => {
-        const text = n.properties.hs_note_body?.replace(/<[^>]*>?/gm, '') || "";
-        const isBot = text.toLowerCase().includes("hemos recibido") || text.toLowerCase().includes("ticket received");
-        return {
-          id: n.id,
-          text,
-          sender: (n.properties.hubspot_owner_id || isBot) ? "agent" : "user",
-          timestamp: n.properties.createdate,
-          type: 'note'
-        };
-      }),
-      ...emails.results.map((e: any) => {
+      ...filteredEmails.map((e: any) => {
         const text = (e.properties.hs_email_text || e.properties.hs_email_html || "").replace(/<[^>]*>?/gm, '');
         const isBot = text.toLowerCase().includes("hemos recibido") || text.toLowerCase().includes("ticket received");
         return {
           id: e.id,
           text,
-          sender: (e.properties.hs_email_direction === "OUTGOING" || isBot) ? "agent" : "user",
+          sender: (e.properties.hs_email_direction === "OUTGOING" || e.properties.hs_email_direction === "OUTGOING_EMAIL" || isBot) ? "agent" : "user",
           timestamp: e.properties.createdate,
           type: 'email'
-        };
-      }),
-      ...comms.results.map((c: any) => {
-        const text = c.properties.hs_communication_body?.replace(/<[^>]*>?/gm, '') || "";
-        const isBot = text.toLowerCase().includes("hemos recibido") || text.toLowerCase().includes("ticket received");
-        return {
-          id: c.id,
-          text,
-          sender: (c.properties.hs_communication_logged_from === "CRM" || isBot) ? "agent" : "user",
-          timestamp: c.properties.createdate,
-          type: 'comm'
         };
       })
     );
