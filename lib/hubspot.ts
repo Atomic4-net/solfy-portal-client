@@ -294,12 +294,26 @@ export async function getTicketMessages(ticketId: string) {
         method: "POST",
         body: JSON.stringify({
           inputs: emailIds.map((id: string) => ({ id })),
-          properties: ["hs_email_text", "hs_email_direction", "createdate", "hs_email_subject", "hs_email_html"],
+          properties: [
+            "hs_email_text",
+            "hs_email_direction",
+            "createdate",
+            "hs_timestamp",
+            "hs_email_subject",
+            "hs_email_html",
+            "hs_email_from_email",
+            "hs_email_to_email",
+            "hs_email_cc_email",
+          ],
         }),
       })
       : { results: [] };
 
-    // 3. Normalize messages
+    // 3. Resolve ticket contact email to filter out internal-only threads
+    const ticketContact = await getTicketContact(ticketId);
+    const clientEmail = (ticketContact?.properties?.email || "").toLowerCase().trim();
+
+    // 4. Normalize messages
     const allMessages: any[] = [];
 
     // Prepend initial message if it exists AND it's not already in emails (to avoid duplication check)
@@ -328,26 +342,64 @@ export async function getTicketMessages(ticketId: string) {
       });
     }
 
+    const strictDirectionFilter = process.env.HUBSPOT_STRICT_EMAIL_DIRECTION_FILTER === "1";
     const allowedDirections = new Set(["INCOMING_EMAIL", "OUTGOING_EMAIL", "INCOMING", "OUTGOING"]);
-    const filteredEmails = emails.results.filter(
-      (e: any) => allowedDirections.has((e.properties?.hs_email_direction || "").toUpperCase()),
-    );
+    const normalizeList = (value: string) =>
+      value
+        .split(/[;,]/g)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
 
-    if (process.env.DEBUG_HUBSPOT_MESSAGE_FILTER === "1") {
+    const filteredEmails = emails.results.filter((e: any) => {
+      const direction = (e.properties?.hs_email_direction || "").toUpperCase();
+      const fromList = normalizeList(e.properties?.hs_email_from_email || "");
+      const toList = normalizeList(e.properties?.hs_email_to_email || "");
+      const ccList = normalizeList(e.properties?.hs_email_cc_email || "");
+      const parties = [...fromList, ...toList, ...ccList];
+      const hasClientParty = clientEmail ? parties.some((p) => p.includes(clientEmail)) : false;
+
+      if (strictDirectionFilter) {
+        return allowedDirections.has(direction) && (hasClientParty || direction === "INCOMING_EMAIL");
+      }
+
+      // Default: keep only client-visible messages
+      if (direction === "INCOMING_EMAIL") return true;
+      if (hasClientParty) return true;
+
+      // Fallback for older records with missing email headers: keep only if readable content exists
+      const text = (e.properties?.hs_email_text || e.properties?.hs_email_html || "").trim();
+      return Boolean(text) && !clientEmail;
+    });
+
+    if (process.env.DEBUG_HUBSPOT_MESSAGE_FILTER === "1" || process.env.DEBUG_HUBSPOT_ALL_MESSAGES === "1") {
       const excluded = emails.results
-        .filter((e: any) => !allowedDirections.has((e.properties?.hs_email_direction || "").toUpperCase()))
+        .filter((e: any) => !filteredEmails.find((f: any) => f.id === e.id))
         .map((e: any) => ({
           id: e.id,
           direction: e.properties?.hs_email_direction,
           subject: e.properties?.hs_email_subject,
+          from: e.properties?.hs_email_from_email,
+          to: e.properties?.hs_email_to_email,
+          cc: e.properties?.hs_email_cc_email,
         }));
+      const included = filteredEmails.map((e: any) => ({
+        id: e.id,
+        direction: e.properties?.hs_email_direction,
+        subject: e.properties?.hs_email_subject,
+        from: e.properties?.hs_email_from_email,
+        to: e.properties?.hs_email_to_email,
+        cc: e.properties?.hs_email_cc_email,
+      }));
       console.log(
         "DEBUG: Ticket message filter",
         JSON.stringify(
           {
             ticketId,
+            strictDirectionFilter,
+            clientEmail: clientEmail || "N/A",
             totalEmails: emails.results.length,
             visibleEmails: filteredEmails.length,
+            includedEmails: included,
             excludedEmails: excluded,
           },
           null,
@@ -359,19 +411,57 @@ export async function getTicketMessages(ticketId: string) {
     allMessages.push(
       ...filteredEmails.map((e: any) => {
         const text = (e.properties.hs_email_text || e.properties.hs_email_html || "").replace(/<[^>]*>?/gm, '');
+        const direction = (e.properties.hs_email_direction || "").toUpperCase();
+        const fromEmail = (e.properties.hs_email_from_email || "").toLowerCase();
+        const toEmail = (e.properties.hs_email_to_email || "").toLowerCase();
         const isBot = text.toLowerCase().includes("hemos recibido") || text.toLowerCase().includes("ticket received");
+
+        // More permissive agent detection to avoid classifying all messages as "user".
+        const looksAgentByDirection = direction.includes("OUTGOING");
+        const looksAgentByEmail =
+          fromEmail.includes("@solfy") ||
+          fromEmail.includes("hubspot") ||
+          toEmail.includes("@solfy");
+
+        const sender = looksAgentByDirection || looksAgentByEmail || isBot ? "agent" : "user";
+
         return {
           id: e.id,
           text,
-          sender: (e.properties.hs_email_direction === "OUTGOING" || e.properties.hs_email_direction === "OUTGOING_EMAIL" || isBot) ? "agent" : "user",
-          timestamp: e.properties.createdate,
+          sender,
+          timestamp: e.properties.hs_timestamp || e.properties.createdate,
           type: 'email'
         };
       })
     );
 
+    if (process.env.DEBUG_HUBSPOT_ALL_MESSAGES === "1") {
+      const messageDebugRows = allMessages.map((m: any) => {
+        const source = filteredEmails.find((e: any) => e.id === m.id);
+        const direction = source?.properties?.hs_email_direction || "N/A";
+        const from = source?.properties?.hs_email_from_email || "N/A";
+        const to = source?.properties?.hs_email_to_email || "N/A";
+        const preview = (m.text || "").replace(/\s+/g, " ").trim().slice(0, 240);
+        return {
+          id: m.id,
+          messageType: m.type,
+          senderMapped: m.sender,
+          direction,
+          from,
+          to,
+          preview,
+        };
+      });
+      console.log("DEBUG: Ticket message rows", JSON.stringify({ ticketId, rows: messageDebugRows }, null, 2));
+    }
+
+    const toTime = (value: string | undefined) => {
+      const t = value ? new Date(value).getTime() : NaN;
+      return Number.isFinite(t) ? t : 0;
+    };
+
     console.log(`DEBUG: Normalized total messages: ${allMessages.length}`);
-    return allMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return allMessages.sort((a, b) => toTime(a.timestamp) - toTime(b.timestamp));
   } catch (error) {
     console.error(`Error in getTicketMessages for ${ticketId}:`, error);
     return [];
