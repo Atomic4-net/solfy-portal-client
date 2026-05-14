@@ -41,12 +41,12 @@ export function TicketInfoSidebar({ ticket, project }: TicketInfoSidebarProps) {
   ]);
   const requestType =
     ticket.pipeline === PIPELINE_INCIDENCIAS
-      ? "Incidencias"
+      ? "Incidencia"
       : ticket.pipeline === PIPELINE_TRAMITES
-        ? "Trámites/Solicitudes"
+        ? "Documentación"
         : incidenciasStages.has(ticket.status)
-          ? "Incidencias"
-          : "Trámites/Solicitudes";
+          ? "Incidencia"
+          : "Documentación";
 
   return (
     <div className="space-y-6 flex flex-col h-full overflow-y-auto pr-1 pb-8 custom-scrollbar">

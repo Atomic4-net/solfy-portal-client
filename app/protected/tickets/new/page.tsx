@@ -48,11 +48,11 @@ export default async function NewTicketPage({
       subtitle: "Selecciona el tipo de gestión que necesitas realizar.",
     },
     asistencia: {
-      title: "Asistencia Técnica",
+      title: "Apertura de incidencia",
       subtitle: "Explícanos tu incidencia para que podamos ayudarte.",
     },
     documentacion: {
-      title: "Solicitud de Documentación",
+      title: "Solicitud de documentación",
       subtitle: "Certificados, facturas y gestión de documentos.",
     }
   };

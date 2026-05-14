@@ -1,8 +1,8 @@
 import { getDeal, getDealTickets } from "@/lib/hubspot";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus, Tag, Calendar } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getTicketDisplayLabel } from "@/lib/ticket-utils";
@@ -53,27 +53,8 @@ export default async function ProjectDetailPage({
         </Link>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-4">
-          {/* Main Info Card */}
-          <Card className="md:col-span-1 border-2">
-            <CardHeader>
-                <CardTitle className="text-lg">Detalles del Proyecto</CardTitle>
-                <CardDescription>Información general</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-2 font-bold uppercase text-[10px] tracking-widest"><Calendar className="h-3 w-3" /> Último cambio</span>
-                    <span className="font-medium">{new Date(deal.properties.hs_lastmodifieddate).toLocaleDateString('es')}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground flex items-center gap-2 font-bold uppercase text-[10px] tracking-widest"><Tag className="h-3 w-3" /> Tipo</span>
-                    <span className="font-medium">{inferredType}</span>
-                </div>
-            </CardContent>
-          </Card>
-
-          {/* Tickets List for this Deal */}
-          <Card className="md:col-span-3 border-2">
+      <div>
+          <Card className="border-2">
             <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/10">
                 <div>
                    <CardTitle className="text-xl font-bold">Mis tickets</CardTitle>

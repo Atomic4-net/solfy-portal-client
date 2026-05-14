@@ -13,6 +13,9 @@ const TICKET_PROPERTIES = [
   "createdate",
   "tipologia_incidencia",
   "tipologia",
+  "sub_categorias_incidencias___aerotermia",
+  "sub_categorias_incidencias",
+  "sub_categoria_incidencia___cargador_coche_electrico",
   "tipologia_tramites",
 ];
 
@@ -123,14 +126,12 @@ export async function createTicket(
   { 
     subject, 
     content, 
-    portalId, 
     dealId, 
     properties = {},
     attachmentIds = [] 
   }: { 
     subject: string, 
     content: string, 
-    portalId: string, 
     dealId?: string,
     properties?: Record<string, any>,
     attachmentIds?: string[]
