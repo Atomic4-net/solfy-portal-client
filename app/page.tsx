@@ -12,7 +12,7 @@ export default async function Home() {
           <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
             <div className="flex gap-2 items-center">
               <Link href={"/"} className="flex items-center">
-                <img src="/logo.png" alt="Solfy" className="h-9 w-auto object-contain" />
+                <img src="/logo-solfy.svg" alt="Solfy" className="h-9 w-auto object-contain" />
               </Link>
             </div>
             <div className="flex gap-4 items-center">

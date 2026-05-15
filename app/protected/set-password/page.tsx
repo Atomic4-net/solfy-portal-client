@@ -8,7 +8,7 @@ export default function SetPasswordPage() {
       <Card className="w-full max-w-sm border-2 border-primary/15 shadow-2xl shadow-primary/10">
         <CardHeader>
           <Link href="/" className="mb-2 flex items-center justify-center">
-            <img src="/logo.png" alt="Solfy" className="h-12 w-auto object-contain" />
+            <img src="/logo-solfy.svg" alt="Solfy" className="h-12 w-auto object-contain" />
           </Link>
           <CardTitle className="text-2xl font-bold">Crea tu contraseña</CardTitle>
           <CardDescription>

@@ -144,8 +144,8 @@ export function TicketChat({ ticketId, initialMessages }: { ticketId: string, in
                               className={cn(
                               "rounded-[20px] px-5 py-3 text-sm shadow-sm transition-all relative border",
                               isUser
-                                  ? "bg-muted border-border text-foreground rounded-tr-[4px]"
-                                  : "bg-secondary border-transparent text-secondary-foreground rounded-tl-[4px]"
+                                  ? "bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tr-[4px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100"
+                                  : "bg-zinc-100 border-zinc-200 text-zinc-900 rounded-tl-[4px] dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100"
                               )}
                           >
                               <p className="whitespace-pre-wrap leading-relaxed font-medium">{message.text}</p>

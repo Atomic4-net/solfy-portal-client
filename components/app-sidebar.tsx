@@ -53,7 +53,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenuButton size="lg" asChild className="hover:bg-transparent px-2">
               <Link href="/protected" className="flex items-center gap-3">
                 <div className="flex aspect-square size-10 items-center justify-center overflow-hidden">
-                  <img src="/logo.png" alt="Solfy" className="h-10 w-auto object-contain" />
+                  <img src="/logo-solfy.svg" alt="Solfy" className="h-10 w-auto object-contain" />
                 </div>
                 <div className="grid flex-1 text-left leading-tight transition-all group-data-[collapsible=icon]:opacity-0">
                   <span className="truncate text-[10px] text-muted-foreground uppercase font-black tracking-[0.2em] mt-0.5">

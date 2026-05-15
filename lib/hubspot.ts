@@ -332,13 +332,27 @@ export async function getTicketMessages(ticketId: string) {
         })
       : { results: [] };
 
-    // 3. Resolve ticket contact email to filter out internal-only threads
-    const ticketContact = await getTicketContact(ticketId);
-    const clientEmail = (ticketContact?.properties?.email || "").toLowerCase().trim();
+    // 3. Resolve client emails from all associated contacts (not just first one)
+    const ticketContactAssociations = await hubspotRequest(`/crm/v4/objects/ticket/${ticketId}/associations/contact`).catch(
+      () => ({ results: [] }),
+    );
+    const associatedContactIds = ticketContactAssociations.results.map((r: any) => r.toObjectId);
+    const associatedContacts =
+      associatedContactIds.length > 0
+        ? await hubspotRequest(`/crm/v3/objects/contacts/batch/read`, {
+            method: "POST",
+            body: JSON.stringify({
+              inputs: associatedContactIds.map((id: string) => ({ id })),
+              properties: ["email"],
+            }),
+          }).catch(() => ({ results: [] }))
+        : { results: [] };
 
     // 4. Normalize messages
     const allMessages: any[] = [];
 
+    const isInternalSolfyEmail = (email: string) =>
+      email.endsWith("@solfy.net") || email.endsWith("@solfy.com");
     const extractEmails = (value: string) => {
       if (!value) return [] as string[];
       const lower = value.toLowerCase();
@@ -366,15 +380,65 @@ export async function getTicketMessages(ticketId: string) {
       }
     };
 
+    const associatedContactEmails = (associatedContacts.results || [])
+      .map((c: any) => (c.properties?.email || "").toLowerCase().trim())
+      .filter(Boolean);
+    let clientEmails = Array.from(
+      new Set(associatedContactEmails.filter((email: string) => !isInternalSolfyEmail(email))),
+    );
+
+    if (clientEmails.length === 0) {
+      const participantEmails = new Set<string>();
+      for (const e of emails.results) {
+        const fromList = extractEmails(e.properties?.hs_email_from_email || "");
+        const toList = extractEmails(e.properties?.hs_email_to_email || "");
+        const headerEmails = getHeaderEmails(e.properties?.hs_email_headers || "");
+        [...fromList, ...toList, ...headerEmails.from, ...headerEmails.to].forEach((mail) => {
+          if (mail && !isInternalSolfyEmail(mail)) participantEmails.add(mail);
+        });
+      }
+      clientEmails = Array.from(participantEmails);
+    }
+
+    const extractLatestReply = (raw: string) => {
+      if (!raw) return "";
+      const normalized = raw.replace(/\r\n/g, "\n").trim();
+      const cutMarkers = [
+        /\nEl .+ escribió:\n/i,
+        /\nOn .+ wrote:\n/i,
+        /\nDe:\s.+\nEnviado:\s.+\nPara:\s.+\nAsunto:\s.+/i,
+        /\nFrom:\s.+\nSent:\s.+\nTo:\s.+\nSubject:\s.+/i,
+        /\n-----Original Message-----/i,
+        /\n---------- Mensaje reenviado ---------/i,
+      ];
+
+      let cutIndex = -1;
+      for (const marker of cutMarkers) {
+        const match = normalized.match(marker);
+        if (match && typeof match.index === "number") {
+          if (cutIndex === -1 || match.index < cutIndex) {
+            cutIndex = match.index;
+          }
+        }
+      }
+
+      const base = cutIndex >= 0 ? normalized.slice(0, cutIndex) : normalized;
+      return base
+        .split("\n")
+        .filter((line) => !line.trim().startsWith(">"))
+        .join("\n")
+        .trim();
+    };
+
     const filteredEmails = emails.results.filter((e: any) => {
       const fromList = extractEmails(e.properties?.hs_email_from_email || "");
       const toList = extractEmails(e.properties?.hs_email_to_email || "");
       const headerEmails = getHeaderEmails(e.properties?.hs_email_headers || "");
       const allFrom = [...fromList, ...headerEmails.from];
       const allTo = [...toList, ...headerEmails.to];
-      if (!clientEmail) return true;
-      const isFromClient = allFrom.some((p) => p === clientEmail);
-      const isToClient = allTo.some((p) => p === clientEmail);
+      if (clientEmails.length === 0) return true;
+      const isFromClient = allFrom.some((p) => clientEmails.includes(p));
+      const isToClient = allTo.some((p) => clientEmails.includes(p));
       return isFromClient || isToClient;
     });
 
@@ -404,7 +468,8 @@ export async function getTicketMessages(ticketId: string) {
         JSON.stringify(
           {
             ticketId,
-            clientEmail: clientEmail || "N/A",
+            associatedContactEmails,
+            clientEmails,
             totalEmails: emails.results.length,
             visibleEmails: filteredEmails.length,
             includedEmails: included,
@@ -418,9 +483,10 @@ export async function getTicketMessages(ticketId: string) {
 
     allMessages.push(
       ...filteredEmails.map((e: any) => {
-        const text = (e.properties.hs_email_text || e.properties.hs_email_html || "").replace(/<[^>]*>?/gm, '');
+        const rawText = (e.properties.hs_email_text || e.properties.hs_email_html || "").replace(/<[^>]*>?/gm, '');
+        const text = extractLatestReply(rawText);
         const fromEmail = (e.properties.hs_email_from_email || "").toLowerCase();
-        const sender = clientEmail && fromEmail.includes(clientEmail) ? "user" : "agent";
+        const sender = clientEmails.some((email) => fromEmail.includes(email)) ? "user" : "agent";
 
         return {
           id: e.id,

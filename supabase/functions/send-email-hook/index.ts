@@ -67,14 +67,14 @@ serve(async (req) => {
     if (email_action_type === 'recovery') subject = "Restablece tu contraseña en Solfy"
 
     const htmlContent = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 12px; background-color: #fff;">
-        <h2 style="color: #000; font-weight: 900; font-size: 24px; margin-bottom: 24px;">Solfy</h2>
-        <p style="font-size: 16px; color: #333; line-height: 1.5;">Hola,</p>
-        <p style="font-size: 16px; color: #333; line-height: 1.5;">Haz clic en el botón de abajo para acceder de forma segura a tu cuenta.</p>
-        <div style="margin: 32px 0;">
-          <a href="${link}" style="background-color: #000; color: #fff; padding: 14px 28px; border-radius: 99px; text-decoration: none; font-weight: bold; display: inline-block;">Iniciar sesión ahora</a>
+      <div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e6edf5; border-radius: 14px; background-color: #ffffff;">
+        <h2 style="color: #0f172a; font-weight: 900; font-size: 24px; margin: 0 0 20px 0;">Solfy</h2>
+        <p style="font-size: 16px; color: #334155; line-height: 1.5; margin: 0 0 12px 0;">Hola,</p>
+        <p style="font-size: 16px; color: #334155; line-height: 1.5; margin: 0 0 8px 0;">Haz clic en el botón para acceder de forma segura a tu cuenta.</p>
+        <div style="margin: 28px 0 30px 0;">
+          <a href="${link}" style="background-color: #3ba7e3; color: #ffffff; padding: 14px 28px; border-radius: 999px; text-decoration: none; font-weight: 700; display: inline-block;">Acceder al portal</a>
         </div>
-        <p style="color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+        <p style="color: #64748b; font-size: 12px; margin: 0; border-top: 1px solid #e6edf5; padding-top: 18px;">
           Este es un enlace de un solo uso. Si no has solicitado este correo, puedes ignorarlo con seguridad.
         </p>
       </div>
