@@ -463,6 +463,11 @@ export async function getTicketMessages(ticketId: string) {
       const headerEmails = getHeaderEmails(e.properties?.hs_email_headers || "");
       const allFrom = [...fromList, ...headerEmails.from];
       const allTo = [...toList, ...headerEmails.to];
+      const direction = (e.properties?.hs_email_direction || "").toUpperCase();
+      const hasAnyParty = allFrom.length > 0 || allTo.length > 0;
+
+      // Preserve portal-created initial message: often INCOMING_EMAIL without from/to metadata.
+      if (!hasAnyParty && direction === "INCOMING_EMAIL") return true;
       if (clientEmails.length === 0) return true;
       const isFromClient = allFrom.some((p) => clientEmails.includes(p));
       const isToClient = allTo.some((p) => clientEmails.includes(p));
@@ -513,7 +518,14 @@ export async function getTicketMessages(ticketId: string) {
         const rawText = (e.properties.hs_email_text || e.properties.hs_email_html || "").replace(/<[^>]*>?/gm, '');
         const text = extractLatestReply(rawText);
         const fromEmail = (e.properties.hs_email_from_email || "").toLowerCase();
-        const sender = clientEmails.some((email) => fromEmail.includes(email)) ? "user" : "agent";
+        const direction = (e.properties?.hs_email_direction || "").toUpperCase();
+        const hasFromTo =
+          Boolean((e.properties?.hs_email_from_email || "").trim()) ||
+          Boolean((e.properties?.hs_email_to_email || "").trim());
+        const sender =
+          (!hasFromTo && direction === "INCOMING_EMAIL")
+            ? "user"
+            : (clientEmails.some((email) => fromEmail.includes(email)) ? "user" : "agent");
 
         return {
           id: e.id,
