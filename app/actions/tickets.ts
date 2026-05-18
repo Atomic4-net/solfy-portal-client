@@ -1,6 +1,6 @@
 "use server";
 
-import { createTicket as hubspotCreateTicket, uploadFile as hubspotUploadFile } from "@/lib/hubspot";
+import { createTicket as hubspotCreateTicket, uploadFile as hubspotUploadFile, getContactByEmail } from "@/lib/hubspot";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { ensureUserProfile } from "@/lib/user-profile";
@@ -24,7 +24,30 @@ export async function createTicketAction(formData: FormData) {
   // 2. Ensure profile exists and has HubSpot contact
   const profile = await ensureUserProfile(user);
 
-  if (!profile?.hubspot_contact_id) {
+  // Safety: always re-resolve contact by authenticated email to avoid stale/mismatched profile IDs.
+  const authEmail = (user.email || "").toLowerCase().trim();
+  let effectiveContactId = profile?.hubspot_contact_id || null;
+  if (authEmail) {
+    const emailContact = await getContactByEmail(authEmail).catch(() => null);
+    if (emailContact?.id) {
+      effectiveContactId = emailContact.id;
+
+      // Keep profile in sync to prevent future mismatches.
+      if (effectiveContactId !== profile?.hubspot_contact_id) {
+        await supabase
+          .from("user_profiles")
+          .upsert(
+            {
+              id: user.id,
+              hubspot_contact_id: effectiveContactId,
+            },
+            { onConflict: "id" },
+          );
+      }
+    }
+  }
+
+  if (!effectiveContactId) {
     return { error: "Contacto de HubSpot no encontrado" };
   }
 
@@ -77,7 +100,7 @@ export async function createTicketAction(formData: FormData) {
     }
 
     // 6. Create ticket in HubSpot
-    const hsTicket = await hubspotCreateTicket(profile.hubspot_contact_id, {
+    const hsTicket = await hubspotCreateTicket(effectiveContactId, {
       subject,
       content,
       dealId: dealId || undefined,
