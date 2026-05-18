@@ -28,9 +28,14 @@ export function TicketList({ initialTickets }: { initialTickets: HubspotTicket[]
   const [statusFilter, setStatusFilter] = useState("all");
 
   const tickets = initialTickets || [];
+  const sortedTickets = [...tickets].sort((a, b) => {
+    const aTime = a.properties.createdate ? new Date(a.properties.createdate).getTime() : 0;
+    const bTime = b.properties.createdate ? new Date(b.properties.createdate).getTime() : 0;
+    return bTime - aTime;
+  });
 
   // Filter logic
-  const filteredTickets = tickets.filter((ticket) => {
+  const filteredTickets = sortedTickets.filter((ticket) => {
     const displayLabel = getTicketDisplayLabel(ticket.properties).toLowerCase();
     const matchesSearch =
       displayLabel.includes(searchQuery.toLowerCase()) ||
