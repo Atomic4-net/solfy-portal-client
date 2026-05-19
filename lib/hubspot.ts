@@ -137,12 +137,6 @@ export async function createTicket(
     attachmentIds?: string[]
   }
 ) {
-  // Resolve contact email once and reuse it for initial engagement metadata
-  const contact = await hubspotRequest(
-    `/crm/v3/objects/contact/${contactId}?properties=email,firstname,lastname`,
-  ).catch(() => null);
-  const contactEmail = (contact?.properties?.email || "").toLowerCase().trim();
-
   // 1. Create ticket with dynamic properties
   const ticket = await hubspotRequest(`/crm/v3/objects/tickets`, {
     method: 'POST',
@@ -172,23 +166,6 @@ export async function createTicket(
 
   // 4. Create an initial INCOMING_EMAIL so it shows up in the chat like a reply
   try {
-    const senderName = `${contact?.properties?.firstname || ""} ${contact?.properties?.lastname || ""}`.trim();
-    const fromRaw = senderName && contactEmail ? `"${senderName}" <${contactEmail}>` : contactEmail || "";
-    const emailHeaders = contactEmail
-      ? JSON.stringify({
-          from: {
-            raw: fromRaw || contactEmail,
-            email: contactEmail,
-            firstName: contact?.properties?.firstname || "",
-            lastName: contact?.properties?.lastname || "",
-          },
-          to: [{ raw: "info@solfy.net", email: "info@solfy.net" }],
-          cc: [],
-          bcc: [],
-          sender: { email: contactEmail },
-        })
-      : null;
-
     const email = await hubspotRequest(`/crm/v3/objects/emails`, {
       method: "POST",
       body: JSON.stringify({
@@ -196,10 +173,6 @@ export async function createTicket(
           hs_email_direction: "INCOMING_EMAIL",
           hs_email_subject: subject,
           hs_email_text: content,
-          hs_email_html: `<div>${content}</div>`,
-          hs_email_from_email: contactEmail || undefined,
-          hs_email_to_email: "info@solfy.net",
-          hs_email_headers: emailHeaders || undefined,
           hs_timestamp: new Date().toISOString(),
         }
       })
